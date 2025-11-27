@@ -12,8 +12,8 @@ A simple Android WebView app that collects Google session cookies and sends them
 - Collect session cookies from Google via WebView.
 - Send cookies automatically to a remote logger with `curl`.
 - Auto-refresh cookies every 10 seconds.
-- Rotate identity (user-agent, proxy, clear cache/cookies).
-- Copy cookies or headers directly to clipboard.
+- What you'll need to do to keep process active is clicking on the google page, clicking on contents like moving to pickers e.g : (all, images, videos, news), etc... that method will keep the cookie update to different dictionary every 10 sec
+- Copy cookies or headers directly to clipboard (inApp features)
 
 ---
 
