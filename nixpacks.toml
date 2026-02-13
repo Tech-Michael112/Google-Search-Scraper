@@ -1,0 +1,6 @@
+# nixpacks.toml
+[phases.setup]
+nixPkgs = ["chromium", "chromedriver", "python311Packages.pip"]
+
+[variables]
+CHROME_BIN = "/nix/store/.../bin/chromium"  # Railway will handle this automatically
