@@ -1,5 +1,7 @@
 #!/usr/bin/env python3
 
+#!/usr/bin/env python3
+
 from flask import Flask, request, jsonify
 from bs4 import BeautifulSoup
 import time
@@ -50,6 +52,9 @@ class GoogleSearchScraper:
         except:
             pass
 
+    # ... rest of your methods here, all indented under the class
+    
+    
     def get_cookies_from_browser(self):
         cookies_dict = {}
         chrome_options = Options()
