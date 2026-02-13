@@ -3,3 +3,7 @@ requests
 beautifulsoup4
 gunicorn
 lxml
+Flask==2.3.3
+beautifulsoup4==4.12.2
+requests==2.31.0
+selenium==4.15.2
