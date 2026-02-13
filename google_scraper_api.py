@@ -4,6 +4,7 @@ from flask import Flask, request, jsonify
 from bs4 import BeautifulSoup
 import time
 import urllib.parse
+import json
 import re
 from datetime import datetime
 import requests
@@ -18,41 +19,38 @@ class GoogleSearchScraper:
         self.cookie_expiry_hours = 2
         self.initialize_headers_and_cookies()
 
-    def get_cookies_from_api(self):
-        try:
-            url = "https://cookieLogger.pythonanywhere.com/get/mykey"
-            headers = {"Authorization": "169e1538-b8dd-4faa-a636-f8173230a4c1"}
-            response = requests.get(url, headers=headers, timeout=10)
-            response.raise_for_status()
-            data = response.json()
-            cookie_string = data.get("cookie", "")
-            cookies_dict = {}
-            for cookie_part in cookie_string.split(';'):
-                cookie_part = cookie_part.strip()
-                if '=' in cookie_part:
-                    name, value = cookie_part.split('=', 1)
-                    cookies_dict[name.strip()] = value.strip()
-            return cookies_dict
-        except Exception:
-            return None
-
     def initialize_headers_and_cookies(self):
         self.headers = {
             'User-Agent': "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0.0.0 Safari/537.36",
             'Accept': "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7",
-            'sec-ch-ua': '"Chromium";v="140", "Not=A?Brand";v="24", "Google Chrome";v="140"',
+            'sec-ch-ua': "\"Chromium\";v=\"140\", \"Not=A?Brand\";v=\"24\", \"Google Chrome\";v=\"140\"",
             'sec-ch-ua-mobile': "?0",
-            'sec-ch-ua-platform': '"Linux"',
+            'sec-ch-ua-platform': "\"Linux\"",
             'upgrade-insecure-requests': "1",
             'accept-language': "en-GB,en-US;q=0.9,en;q=0.8",
         }
 
-        api_cookies = self.get_cookies_from_api()
-        if api_cookies:
-            self.current_cookies = api_cookies
-        else:
-            # Fallback cookies if API fails
-            self.current_cookies = {}
+        # Hardcoded cookies - replace these when they expire
+        self.current_cookies = {
+            "SID": "g.a0006QgzClcDNP7pW-T_YmGqp6eM4RFSfEP7vhSD7Cb8YgBgfn_hA0qRDYqQt59KsT4rcfqqigACgYKAbgSARESFQHGX2MiO6wgsORLoTshqWiFxHvsSxoVAUF8yKoaOCKKD_VpNzx3xSFkHfGo0076",
+            "__Secure-1PSID": "g.a0006QgzClcDNP7pW-T_YmGqp6eM4RFSfEP7vhSD7Cb8YgBgfn_hKh1pGleTRJUQpbS31E7MVQACgYKAdYSARESFQHGX2MimiZ9BB9h9e9JAFUVnTY13xoVAUF8yKrAROrx4q5SCMUmKa31TirQ0076",
+            "__Secure-3PSID": "g.a0006QgzClcDNP7pW-T_YmGqp6eM4RFSfEP7vhSD7Cb8YgBgfn_hdfHctwd_WoR1vEuljnnFgwACgYKAWwSARESFQHGX2MirCMVebTbpJGSpt4oc1FHLRoVAUF8yKozH-Tque28j2CiCGgsWkjb0076",
+            "HSID": "AFCrzVkaSTW0t8BDH",
+            "SSID": "AY7bU1zbNnyOT6-XJ",
+            "APISID": "Syfw_KQwYvSIZ7RT/AQSJ89iPhLG_drtjt",
+            "SAPISID": "1yLWPeTBXAXw1b4c/ApzC4WZfpcRIIgkmc",
+            "__Secure-1PAPISID": "1yLWPeTBXAXw1b4c/ApzC4WZfpcRIIgkmc",
+            "__Secure-3PAPISID": "1yLWPeTBXAXw1b4c/ApzC4WZfpcRIIgkmc",
+            "__Secure-BUCKET": "CJgB",
+            "SEARCH_SAMESITE": "CgQIiKAB",
+            "AEC": "AaJma5uu9hqnZGzXmcpCPmwi3kzY6Le8YkW9yUTATzXVDFcC6iGw5WAn8A",
+            "NID": "528=AfXqFmNc3S-X-wh274GiLVtpF4ps2mV_r5aqv8hBPSsfQNi_yvNtpLuSUixk1jYS_y5pBd_qmCMYvlGtrrUA0BrVtsgYEi2Ts3_iYvqAZ8CQuzVkabxMuwLFNzr_EQqNnb2O2ePH7y3jaMI3jkxCP9ntkLs4_W6EjgvA12KMsa7FcIQUjPazhREb-REGTzpO57pV5zEunYcW6plCYI3aBTUnC7HmuQ-iWsw89ONNG0VTOGvt1HN8BBPDmg3Dp2lhMeDf6RwxX7hMacwEIhZ_ib6jFkcdrkHa8xuvqZB5EPgk_zG_6CjlaMyc-_0tM5zaM5ylrZjimwSx4OPhDn2HCdQb9l_rf_AwcB-DAuDfQUh-mYKGbYuSaYNii7S-ZaLxxeOL0w8z8jru7Uo",
+            "__Secure-STRP": "AD6Dogs-v12aiTtlXbdRlneWMnAkA77cTPuDod7J6MAy-Qk9TJDRVQRrg3poLJbZSwQwRYdrYfl5H5v5W2mavTe0MfLQBdpEFg",
+            "DV": "U0Q-xZsTbixsIBy4P1MyROtg6z6LxRmI-LVhLnx5NgEAAGAUsbpzQL8ycwAAAJhcTY7CRtr7IgAAAAHw2_5TMtlDCgAAACKOl0gFWpnGAgAAAA",
+            "SIDCC": "AKEyXzXUGhYY3uQDEWo4eoe6LMCvO7scBDrYh9Pp-_L03vVfPmMJ-EMUQ1dOQ2rO9QyKFbprfQ",
+            "__Secure-1PSIDCC": "AKEyXzWz-lk8U1eLUQsntYll6u-vU9Lz_mw6UtAhgmsAKH7x2zxRDIr2AucPNi0cL2m3LNkMgw",
+            "__Secure-3PSIDCC": "AKEyXzVw-_S1H08RajM6CEmrcVDPBZtPvJMbKprmkJ9qRsw8h9wga5VFVkkggwedR9GyADlf7PA"
+        }
         
         self.update_cookie_header()
         self.cookie_last_updated = datetime.now()
@@ -60,26 +58,6 @@ class GoogleSearchScraper:
     def update_cookie_header(self):
         cookie_string = '; '.join([f"{name}={value}" for name, value in self.current_cookies.items()])
         self.headers['Cookie'] = cookie_string
-
-    def should_refresh_cookies(self):
-        if not self.cookie_last_updated:
-            return True
-        time_since_update = datetime.now() - self.cookie_last_updated
-        return time_since_update.total_seconds() > (self.cookie_expiry_hours * 3600)
-
-    def refresh_cookies(self):
-        api_cookies = self.get_cookies_from_api()
-        if api_cookies:
-            self.current_cookies = api_cookies
-            self.update_cookie_header()
-            self.cookie_last_updated = datetime.now()
-            return True
-        return False
-
-    def ensure_fresh_cookies(self):
-        if self.should_refresh_cookies():
-            return self.refresh_cookies()
-        return True
 
     def parse_google_search_results(self, html_content):
         soup = BeautifulSoup(html_content, 'html.parser')
@@ -281,43 +259,7 @@ class GoogleSearchScraper:
                 return next_url
         return None
 
-    def search_single_page(self, query, start=0):
-        """Search a single page with optional start parameter"""
-        if not self.ensure_fresh_cookies():
-            pass
-
-        base_url = "https://www.google.com/search"
-        params = {'q': query, 'hl': 'en', 'start': start}
-
-        try:
-            response = self.session.get(base_url, params=params, headers=self.headers, timeout=15)
-            response.raise_for_status()
-            page_data = self.parse_google_search_results(response.text)
-            next_url = self.get_next_page_url(response.text)
-            
-            return {
-                'success': True,
-                'page': (start // 10) + 1,
-                'query': query,
-                'results': page_data['results'],
-                'total_results': len(page_data['results']),
-                'next_page': next_url is not None,
-                'next_start': start + 10 if next_url else None,
-                'timestamp': datetime.now().isoformat()
-            }
-        except Exception as e:
-            return {
-                'success': False,
-                'error': str(e),
-                'query': query,
-                'page': (start // 10) + 1
-            }
-
-    def search_all_pages(self, query, max_pages=10):
-        """Search all pages up to max_pages"""
-        if not self.ensure_fresh_cookies():
-            pass
-
+    def search(self, query):
         base_url = "https://www.google.com/search"
         params = {'q': query, 'hl': 'en'}
 
@@ -325,7 +267,7 @@ class GoogleSearchScraper:
         current_page = 1
         next_url = base_url
 
-        while next_url and current_page <= max_pages:
+        while next_url:
             try:
                 if current_page == 1:
                     response = self.session.get(base_url, params=params, headers=self.headers, timeout=15)
@@ -336,7 +278,7 @@ class GoogleSearchScraper:
                 page_data = self.parse_google_search_results(response.text)
                 all_results.extend(page_data['results'])
                 next_url = self.get_next_page_url(response.text)
-
+                
                 if next_url:
                     time.sleep(1)
                 
@@ -345,14 +287,17 @@ class GoogleSearchScraper:
             except Exception as e:
                 break
 
-        return {
-            'success': True,
-            'query': query,
-            'total_pages_scraped': current_page - 1,
-            'total_results': len(all_results),
-            'results': all_results,
-            'timestamp': datetime.now().isoformat()
+        final_data = {
+            'metadata': {
+                'query': query,
+                'total_pages': current_page - 1,
+                'total_results': len(all_results),
+                'timestamp': datetime.now().isoformat()
+            },
+            'results': all_results
         }
+
+        return final_data
 
 
 # Initialize scraper globally
@@ -363,20 +308,32 @@ scraper = GoogleSearchScraper()
 def home():
     return jsonify({
         'status': 'Google Search Scraper API',
-        'version': '1.0',
+        'version': '2.0',
         'endpoints': {
-            '/search': 'GET - Search single page (params: q, page)',
-            '/search/all': 'GET - Search all pages (params: q, max_pages)',
+            '/search': 'GET - Search all pages (params: q)',
+            '/search/page': 'GET - Search single page (params: q, page)',
         },
         'examples': {
-            'single_page': '/search?q=python&page=1',
-            'all_pages': '/search/all?q=python&max_pages=5'
+            'all_pages': '/search?q=python',
+            'single_page': '/search/page?q=python&page=1'
         }
     })
 
 
 @app.route('/search', methods=['GET'])
-def search():
+def search_all():
+    """Search all pages - scrapes everything"""
+    query = request.args.get('q', '').strip()
+    
+    if not query:
+        return jsonify({'error': 'Missing query parameter (q)'}), 400
+    
+    result = scraper.search(query)
+    return jsonify(result)
+
+
+@app.route('/search/page', methods=['GET'])
+def search_page():
     """Search single page with pagination"""
     query = request.args.get('q', '').strip()
     page = int(request.args.get('page', 1))
@@ -387,27 +344,32 @@ def search():
     if page < 1:
         return jsonify({'error': 'Page must be >= 1'}), 400
     
+    base_url = "https://www.google.com/search"
     start = (page - 1) * 10
-    result = scraper.search_single_page(query, start)
+    params = {'q': query, 'hl': 'en', 'start': start}
     
-    return jsonify(result)
-
-
-@app.route('/search/all', methods=['GET'])
-def search_all():
-    """Search all pages up to max_pages"""
-    query = request.args.get('q', '').strip()
-    max_pages = int(request.args.get('max_pages', 10))
-    
-    if not query:
-        return jsonify({'error': 'Missing query parameter (q)'}), 400
-    
-    if max_pages < 1 or max_pages > 50:
-        return jsonify({'error': 'max_pages must be between 1 and 50'}), 400
-    
-    result = scraper.search_all_pages(query, max_pages)
-    
-    return jsonify(result)
+    try:
+        response = scraper.session.get(base_url, params=params, headers=scraper.headers, timeout=15)
+        response.raise_for_status()
+        page_data = scraper.parse_google_search_results(response.text)
+        next_url = scraper.get_next_page_url(response.text)
+        
+        return jsonify({
+            'success': True,
+            'page': page,
+            'query': query,
+            'results': page_data['results'],
+            'total_results': len(page_data['results']),
+            'has_next_page': next_url is not None,
+            'timestamp': datetime.now().isoformat()
+        })
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'error': str(e),
+            'query': query,
+            'page': page
+        }), 500
 
 
 if __name__ == '__main__':
