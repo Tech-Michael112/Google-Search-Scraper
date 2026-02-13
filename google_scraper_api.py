@@ -1,7 +1,5 @@
 #!/usr/bin/env python3
 
-#!/usr/bin/env python3
-
 from flask import Flask, request, jsonify
 from bs4 import BeautifulSoup
 import time
@@ -27,7 +25,7 @@ class GoogleSearchScraper:
     def __init__(self):
         self.session = requests.Session()
         self.cookie_last_updated = None
-        self.cookie_expiry_hours = 2
+        self.cookie_expiry_hours = 1  # Refresh cookies every hour
         self.driver = None
         self.temp_dir = tempfile.mkdtemp()
         self.cookie_file = os.path.join(self.temp_dir, 'google_cookies.pkl')
@@ -52,10 +50,8 @@ class GoogleSearchScraper:
         except:
             pass
 
-    # ... rest of your methods here, all indented under the class
-    
-    
     def get_cookies_from_browser(self):
+        """Open a small internal browser and collect Google cookies"""
         cookies_dict = {}
         chrome_options = Options()
         chrome_options.add_argument('--headless=new')
@@ -63,35 +59,49 @@ class GoogleSearchScraper:
         chrome_options.add_argument('--disable-dev-shm-usage')
         chrome_options.add_argument('--disable-gpu')
         chrome_options.add_argument('--window-size=1920,1080')
-        chrome_options.add_argument('--user-agent=Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36')
+        chrome_options.add_argument('--user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36')
         chrome_options.add_argument('--disable-blink-features=AutomationControlled')
         chrome_options.add_experimental_option("excludeSwitches", ["enable-automation"])
         chrome_options.add_experimental_option('useAutomationExtension', False)
         
         try:
+            print("Opening internal browser to collect Google cookies...")
             self.driver = webdriver.Chrome(options=chrome_options)
             self.driver.execute_script("Object.defineProperty(navigator, 'webdriver', {get: () => undefined})")
             
+            # Navigate to Google
             self.driver.get("https://www.google.com")
             
+            # Wait for page to load
             wait = WebDriverWait(self.driver, 10)
             wait.until(EC.presence_of_element_located((By.TAG_NAME, "body")))
             
+            # Perform a dummy search to get proper search cookies
+            search_box = self.driver.find_element(By.NAME, "q")
+            search_box.send_keys("test")
+            search_box.submit()
+            
             time.sleep(3)
             
+            # Collect cookies
             cookies = self.driver.get_cookies()
             for cookie in cookies:
                 cookies_dict[cookie['name']] = cookie['value']
             
+            # Save cookies
             with open(self.cookie_file, 'wb') as f:
                 pickle.dump(cookies_dict, f)
+            
+            print(f"Successfully collected {len(cookies_dict)} cookies")
                 
         except Exception as e:
             print(f"Browser error: {e}")
+            # Try to load saved cookies if browser fails
             if os.path.exists(self.cookie_file):
                 try:
                     with open(self.cookie_file, 'rb') as f:
                         cookies_dict = pickle.load(f)
+                    print(f"Loaded {len(cookies_dict)} cookies from file")
                 except:
                     pass
         finally:
@@ -103,20 +113,21 @@ class GoogleSearchScraper:
 
     def initialize_headers_and_cookies(self):
         self.headers = {
-            'User-Agent': "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
-            'Accept': "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7",
-            'sec-ch-ua': '"Not_A Brand";v="8", "Chromium";v="120", "Google Chrome";v="120"',
-            'sec-ch-ua-mobile': "?0",
-            'sec-ch-ua-platform': '"Linux"',
-            'upgrade-insecure-requests': "1",
-            'accept-language': "en-US,en;q=0.9",
-            'sec-fetch-site': "same-origin",
-            'sec-fetch-mode': "navigate",
-            'sec-fetch-user': "?1",
-            'sec-fetch-dest': "document",
-            'referer': "https://www.google.com/",
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+            'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7',
+            'Accept-Language': 'en-US,en;q=0.9',
+            'Accept-Encoding': 'gzip, deflate, br',
+            'DNT': '1',
+            'Connection': 'keep-alive',
+            'Upgrade-Insecure-Requests': '1',
+            'Sec-Fetch-Dest': 'document',
+            'Sec-Fetch-Mode': 'navigate',
+            'Sec-Fetch-Site': 'none',
+            'Sec-Fetch-User': '?1',
+            'Cache-Control': 'max-age=0',
         }
 
+        # Get fresh cookies from browser
         browser_cookies = self.get_cookies_from_browser()
         if browser_cookies:
             self.current_cookies = browser_cookies
@@ -129,6 +140,8 @@ class GoogleSearchScraper:
     def update_cookie_header(self):
         cookie_string = '; '.join([f"{name}={value}" for name, value in self.current_cookies.items()])
         self.headers['Cookie'] = cookie_string
+        # Also update session cookies
+        self.session.cookies.update(self.current_cookies)
 
     def should_refresh_cookies(self):
         if not self.cookie_last_updated:
@@ -137,6 +150,7 @@ class GoogleSearchScraper:
         return time_since_update.total_seconds() > (self.cookie_expiry_hours * 3600)
 
     def refresh_cookies(self):
+        print("Refreshing cookies...")
         browser_cookies = self.get_cookies_from_browser()
         if browser_cookies:
             self.current_cookies = browser_cookies
@@ -154,194 +168,99 @@ class GoogleSearchScraper:
         soup = BeautifulSoup(html_content, 'html.parser')
         results = []
 
-        dictionary_result = self.extract_dictionary_result(soup)
-        if dictionary_result:
-            results.append(dictionary_result)
-
+        # Regular search results
         regular_results = self.extract_regular_results(soup)
         results.extend(regular_results)
 
-        metadata = self.extract_search_metadata(soup)
-
         return {
-            'metadata': metadata,
             'results': results,
             'total_results': len(results)
         }
 
-    def extract_dictionary_result(self, soup):
-        dictionary_selectors = [
-            {'data-dobid': 'hdw'},
-            {'class': 'LTKOO'},
-            {'class': 'sY7ric'},
-            {'class': 'kno-ecr-pt'}
-        ]
-
-        dictionary_div = None
-        for selector in dictionary_selectors:
-            dictionary_div = soup.find('div', selector)
-            if dictionary_div:
-                break
-
-        if not dictionary_div:
-            return None
-
-        result = {
-            'type': 'dictionary',
-            'word': dictionary_div.get_text(strip=True),
-            'pronunciation': '',
-            'definitions': [],
-            'examples': [],
-            'similar_words': []
-        }
-
-        pronunciation_selectors = ['span.ApHyTb', 'span.pronunciation', 'span.rtng']
-        for selector in pronunciation_selectors:
-            pronunciation = soup.select_one(selector)
-            if pronunciation:
-                result['pronunciation'] = pronunciation.get_text(strip=True)
-                break
-
-        definition_elements = soup.find_all('div', {'data-attrid': re.compile('.*definition.*|.*SenseDefinition.*')})
-        for def_element in definition_elements:
-            definition_text = def_element.find('span', {'data-dobid': 'dfn'}) or def_element.find('span')
-            if definition_text:
-                definition = definition_text.get_text(strip=True)
-                if definition and len(definition) > 10:
-                    result['definitions'].append(definition)
-                    example = def_element.find('div', class_='ZYHQ7e') or def_element.find('div', class_=re.compile('.*example.*'))
-                    if example:
-                        result['examples'].append(example.get_text(strip=True))
-
-        similar_words_containers = [
-            'div.qFRZdb', 'div.related-words', 'div.kno-swp', 'div.similar-words'
-        ]
-
-        for container_selector in similar_words_containers:
-            similar_words_container = soup.select_one(container_selector)
-            if similar_words_container:
-                similar_words = similar_words_container.find_all('span', class_=re.compile('.*word.*|.*clOx1e.*'))
-                for word in similar_words:
-                    word_text = word.get_text(strip=True)
-                    if word_text and len(word_text) > 1:
-                        result['similar_words'].append(word_text)
-                break
-
-        return result
-
     def extract_regular_results(self, soup):
         results = []
+        
+        # Modern Google search result selectors
         result_selectors = [
-            'div.g', 'div.MjjYud', 'div.tF2Cxc', 'div.rc',
-            'div[data-hveid]', 'div[data-ved]', 'div.section'
+            'div.g',
+            'div.MjjYud',
+            'div.tF2Cxc',
+            'div.rc',
+            'div[jscontroller]',
+            'div.Gx5Zad'
         ]
 
         for selector in result_selectors:
             result_containers = soup.select(selector)
             for container in result_containers:
                 result_data = self.extract_single_result(container)
-                if result_data and result_data.get('title') and result_data.get('url'):
+                if result_data and result_data.get('title') and result_data.get('link'):
                     results.append(result_data)
 
         return results
 
     def extract_single_result(self, container):
         result = {
-            'type': 'regular',
             'title': '',
-            'url': '',
-            'description': '',
+            'link': '',
             'snippet': '',
-            'source': '',
-            'date': ''
+            'displayed_link': ''
         }
 
-        title_selectors = ['h3', 'a h3', '.DKV0Md', '.LC20lb', '.MBeuO']
+        # Extract title
+        title_selectors = ['h3', '.LC20lb', '.DKV0Md', '.vvjwJb']
         for selector in title_selectors:
             title_elem = container.select_one(selector)
             if title_elem:
                 result['title'] = title_elem.get_text(strip=True)
                 break
 
+        # Extract link
         link_elem = container.find('a')
         if link_elem and link_elem.get('href'):
-            result['url'] = link_elem['href']
-            if result['url'].startswith('/url?q='):
-                result['url'] = result['url'].split('/url?q=')[1].split('&')[0]
-                result['url'] = urllib.parse.unquote(result['url'])
+            href = link_elem['href']
+            if href.startswith('/url?q='):
+                result['link'] = href.split('/url?q=')[1].split('&')[0]
+                result['link'] = urllib.parse.unquote(result['link'])
+            elif href.startswith('http'):
+                result['link'] = href
 
-        desc_selectors = [
-            '.VwiC3b', '.MUxGbd', '.s3v9rd', '.aCOpRe',
-            'span[class*="snippet"]', 'div[class*="snippet"]',
-            'span[class*="description"]', 'div[class*="description"]'
+        # Extract snippet/description
+        snippet_selectors = [
+            '.VwiC3b',
+            '.s3v9rd',
+            '.MUxGbd',
+            '.aCOpRe',
+            '.yXK7lf'
         ]
-
-        for selector in desc_selectors:
-            desc_elem = container.select_one(selector)
-            if desc_elem:
-                result['description'] = desc_elem.get_text(strip=True)
+        for selector in snippet_selectors:
+            snippet_elem = container.select_one(selector)
+            if snippet_elem:
+                result['snippet'] = snippet_elem.get_text(strip=True)
                 break
 
-        source_selectors = ['cite', '.TbwUpd', '.iUh30', '.fjqwze']
-        for selector in source_selectors:
-            source_elem = container.select_one(selector)
-            if source_elem:
-                result['source'] = source_elem.get_text(strip=True)
-                break
-
-        date_selectors = ['span.f', '.MUxGbd.wuQ4Ob.WZ8Tjf', '.LEwnzc']
-        for selector in date_selectors:
-            date_elem = container.select_one(selector)
-            if date_elem:
-                result['date'] = date_elem.get_text(strip=True)
+        # Extract displayed link
+        displayed_link_selectors = ['.tjvcx', '.iUh30', '.B6fmyf']
+        for selector in displayed_link_selectors:
+            displayed_elem = container.select_one(selector)
+            if displayed_elem:
+                result['displayed_link'] = displayed_elem.get_text(strip=True)
                 break
 
         return result
 
-    def extract_search_metadata(self, soup):
-        metadata = {
-            'query': '',
-            'filters': [],
-            'result_stats': ''
-        }
-
-        search_input = soup.find('textarea', {'name': 'q'})
-        if search_input:
-            metadata['query'] = search_input.get('value', '')
-
-        filter_selectors = [
-            'div[class*="filter"]', 'div[class*="tab"]', 'a[class*="filter"]',
-            'a[class*="tab"]', '.hdtb-mitem', '.hdtbItm'
-        ]
-
-        for selector in filter_selectors:
-            filter_elements = soup.select(selector)
-            for filter_elem in filter_elements:
-                filter_text = filter_elem.get_text(strip=True)
-                if (filter_text and len(filter_text) > 2 and
-                    len(filter_text) < 50 and
-                    filter_text.lower() not in ['all', 'images', 'videos', 'news', 'maps']):
-                    metadata['filters'].append(filter_text)
-
-        stats_selectors = ['#result-stats', '.appbar', '.sd', '#search']
-        for selector in stats_selectors:
-            stats_elem = soup.select_one(selector)
-            if stats_elem:
-                metadata['result_stats'] = stats_elem.get_text(strip=True)
-                break
-
-        return metadata
-
     def get_next_page_url(self, html_content):
         soup = BeautifulSoup(html_content, 'html.parser')
-        next_page_selectors = [
+        
+        # Find next page button
+        next_selectors = [
             'a#pnnext',
             'a[aria-label*="Next"]',
             'a[class*="next"]',
-            'a.fl'
+            'a.fl:last-child'
         ]
 
-        for selector in next_page_selectors:
+        for selector in next_selectors:
             next_page_link = soup.select_one(selector)
             if next_page_link and next_page_link.get('href'):
                 next_url = next_page_link.get('href')
@@ -352,14 +271,21 @@ class GoogleSearchScraper:
 
     def search_single_page(self, query, start=0):
         if not self.ensure_fresh_cookies():
-            pass
+            print("Warning: Could not ensure fresh cookies")
 
         base_url = "https://www.google.com/search"
-        params = {'q': query, 'hl': 'en', 'start': start}
+        params = {
+            'q': query,
+            'hl': 'en',
+            'start': start,
+            'num': 10
+        }
 
         try:
+            print(f"Searching page {start//10 + 1} for: {query}")
             response = self.session.get(base_url, params=params, headers=self.headers, timeout=15)
             response.raise_for_status()
+            
             page_data = self.parse_google_search_results(response.text)
             next_url = self.get_next_page_url(response.text)
             
@@ -374,6 +300,7 @@ class GoogleSearchScraper:
                 'timestamp': datetime.now().isoformat()
             }
         except Exception as e:
+            print(f"Error searching page: {e}")
             return {
                 'success': False,
                 'error': str(e),
@@ -383,33 +310,43 @@ class GoogleSearchScraper:
 
     def search_all_pages(self, query, max_pages=10):
         if not self.ensure_fresh_cookies():
-            pass
+            print("Warning: Could not ensure fresh cookies")
 
         base_url = "https://www.google.com/search"
-        params = {'q': query, 'hl': 'en'}
+        params = {
+            'q': query,
+            'hl': 'en',
+            'num': 10
+        }
 
         all_results = []
         current_page = 1
-        next_url = base_url
+        next_url = None
 
-        while next_url and current_page <= max_pages:
+        while current_page <= max_pages:
             try:
                 if current_page == 1:
+                    print(f"Searching page 1 for: {query}")
                     response = self.session.get(base_url, params=params, headers=self.headers, timeout=15)
                 else:
+                    if not next_url:
+                        break
+                    print(f"Searching page {current_page} for: {query}")
                     response = self.session.get(next_url, headers=self.headers, timeout=15)
 
                 response.raise_for_status()
                 page_data = self.parse_google_search_results(response.text)
                 all_results.extend(page_data['results'])
+                
                 next_url = self.get_next_page_url(response.text)
-
+                
                 if next_url:
-                    time.sleep(1)
+                    time.sleep(2)  # Be respectful to Google
                 
                 current_page += 1
 
             except Exception as e:
+                print(f"Error on page {current_page}: {e}")
                 break
 
         return {
@@ -422,6 +359,7 @@ class GoogleSearchScraper:
         }
 
 
+# Initialize scraper
 scraper = GoogleSearchScraper()
 
 
@@ -436,7 +374,7 @@ def home():
         },
         'examples': {
             'single_page': '/search?q=python&page=1',
-            'all_pages': '/search/all?q=python&max_pages=5'
+            'all_pages': '/search/all?q=python&max_pages=2'
         }
     })
 
@@ -476,4 +414,4 @@ def search_all():
 
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 5000))
-    app.run(host='0.0.0.0', port=port, debug=True)
+    app.run(host='0.0.0.0', port=port, debug=False)
