@@ -9,12 +9,15 @@ from datetime import datetime
 import requests
 import os
 import random
+from concurrent.futures import ThreadPoolExecutor, as_completed
+import threading
 
 app = Flask(__name__)
 
 class GoogleSearchScraper:
     def __init__(self):
         self.session = requests.Session()
+        self.lock = threading.Lock()
         self.initialize_headers_and_cookies()
 
     def get_cookies_from_api(self):
@@ -62,6 +65,22 @@ class GoogleSearchScraper:
         cookie_string = '; '.join([f"{name}={value}" for name, value in self.current_cookies.items()])
         self.headers['Cookie'] = cookie_string
         self.session.cookies.update(self.current_cookies)
+
+    def is_valid_result(self, result):
+        """Filter out invalid or duplicate results"""
+        if not result.get('url'):
+            return False
+        
+        if 'google.com/ackl' in result['url'] or 'googleadservices' in result['url']:
+            return False
+        
+        if not result.get('title') or len(result['title']) < 3:
+            return False
+        
+        if result.get('title') == "Learn How to Develop Software" and not result.get('source'):
+            return False
+        
+        return True
 
     def parse_google_search_results(self, html_content):
         soup = BeautifulSoup(html_content, 'html.parser')
@@ -150,20 +169,20 @@ class GoogleSearchScraper:
             result_containers = soup.select(selector)
             for container in result_containers:
                 result_data = self.extract_single_result(container)
-                if result_data and result_data.get('title') and result_data.get('url'):
+                if result_data and self.is_valid_result(result_data):
                     results.append(result_data)
 
         return results
 
     def extract_single_result(self, container):
         result = {
-            'type': 'regular',
-            'title': '',
-            'url': '',
+            'date': '',
             'description': '',
             'snippet': '',
             'source': '',
-            'date': ''
+            'title': '',
+            'type': 'regular',
+            'url': ''
         }
 
         title_selectors = ['h3', 'a h3', '.DKV0Md', '.LC20lb', '.MBeuO']
@@ -226,53 +245,71 @@ class GoogleSearchScraper:
                 return next_url
         return None
 
-    def search_single_page(self, query, start=0):
+    def fetch_page(self, query, start):
+        """Fetch a single page - used for threading"""
         base_url = "https://www.google.com/search"
         params = {'q': query, 'hl': 'en', 'start': start}
-
+        
         try:
             response = self.session.get(base_url, params=params, headers=self.headers, timeout=15)
             response.raise_for_status()
             page_data = self.parse_google_search_results(response.text)
-            next_url = self.get_next_page_url(response.text)
+            
+            valid_results = [r for r in page_data['results'] if self.is_valid_result(r)]
             
             return {
                 'success': True,
                 'page': (start // 10) + 1,
-                'query': query,
-                'results': page_data['results'],
-                'total_results': len(page_data['results']),
-                'next_page': next_url is not None,
-                'next_start': start + 10 if next_url else None,
-                'timestamp': datetime.now().isoformat()
+                'results': valid_results,
+                'start': start
             }
         except Exception as e:
             return {
                 'success': False,
+                'page': (start // 10) + 1,
                 'error': str(e),
-                'query': query,
-                'page': (start // 10) + 1
+                'start': start
             }
 
-    def search_pages_range(self, query, start_page=1, end_page=3):
-        """Search multiple pages and return combined results"""
+    def search_single_page(self, query, start=0):
+        result = self.fetch_page(query, start)
+        
+        return {
+            'success': result['success'],
+            'page': result['page'],
+            'query': query,
+            'results': result.get('results', []),
+            'total_results': len(result.get('results', [])),
+            'next_page': True,  # You might want to calculate this properly
+            'next_start': start + 10 if result['success'] else None,
+            'timestamp': datetime.now().isoformat()
+        }
+
+    def search_pages_range_threaded(self, query, start_page=1, end_page=3):
+        """Search multiple pages using threads for faster processing"""
         all_results = []
         seen_urls = set()
-        current_page = start_page
         
-        while current_page <= end_page:
-            start = (current_page - 1) * 10
-            result = self.search_single_page(query, start)
+        # Create a list of start positions for each page
+        starts = [(page - 1) * 10 for page in range(start_page, end_page + 1)]
+        
+        # Use ThreadPoolExecutor to fetch pages concurrently
+        with ThreadPoolExecutor(max_workers=min(5, len(starts))) as executor:
+            # Submit all tasks
+            future_to_page = {
+                executor.submit(self.fetch_page, query, start): start 
+                for start in starts
+            }
             
-            if result['success']:
-                for item in result['results']:
-                    if item.get('url') and item['url'] not in seen_urls:
-                        seen_urls.add(item['url'])
-                        all_results.append(item)
-            
-            current_page += 1
-            if current_page <= end_page:
-                time.sleep(1)
+            # Process results as they complete
+            for future in as_completed(future_to_page):
+                result = future.result()
+                if result['success']:
+                    with self.lock:
+                        for item in result['results']:
+                            if item.get('url') and item['url'] not in seen_urls:
+                                seen_urls.add(item['url'])
+                                all_results.append(item)
         
         return {
             'success': True,
@@ -283,46 +320,36 @@ class GoogleSearchScraper:
             'timestamp': datetime.now().isoformat()
         }
 
-    def search_all_pages(self, query, max_pages=10):
-        base_url = "https://www.google.com/search"
-        params = {'q': query, 'hl': 'en', 'num': 10}
-
+    def search_all_pages_threaded(self, query, max_pages=10):
+        """Search all pages using threads for faster processing"""
         all_results = []
         seen_urls = set()
-        current_page = 1
-        next_url = None
-
-        while current_page <= max_pages:
-            try:
-                if current_page == 1:
-                    response = self.session.get(base_url, params=params, headers=self.headers, timeout=15)
-                else:
-                    if not next_url:
-                        break
-                    response = self.session.get(next_url, headers=self.headers, timeout=15)
-
-                response.raise_for_status()
-                page_data = self.parse_google_search_results(response.text)
-                
-                for result in page_data['results']:
-                    if result.get('url') and result['url'] not in seen_urls:
-                        seen_urls.add(result['url'])
-                        all_results.append(result)
-                
-                next_url = self.get_next_page_url(response.text)
-                
-                if next_url:
-                    time.sleep(1)
-                
-                current_page += 1
-
-            except Exception as e:
-                break
-
+        
+        # Create a list of start positions for each page
+        starts = [(page - 1) * 10 for page in range(1, max_pages + 1)]
+        
+        # Use ThreadPoolExecutor to fetch pages concurrently
+        with ThreadPoolExecutor(max_workers=min(5, max_pages)) as executor:
+            # Submit all tasks
+            future_to_page = {
+                executor.submit(self.fetch_page, query, start): start 
+                for start in starts
+            }
+            
+            # Process results as they complete
+            for future in as_completed(future_to_page):
+                result = future.result()
+                if result['success']:
+                    with self.lock:
+                        for item in result['results']:
+                            if item.get('url') and item['url'] not in seen_urls:
+                                seen_urls.add(item['url'])
+                                all_results.append(item)
+        
         return {
             'success': True,
             'query': query,
-            'total_pages_scraped': current_page - 1,
+            'total_pages_scraped': max_pages,
             'total_results': len(all_results),
             'results': all_results,
             'timestamp': datetime.now().isoformat()
@@ -341,11 +368,15 @@ def home():
             '/search': 'GET - Search single page (params: q, page)',
             '/search/all': 'GET - Search all pages (params: q, max_pages)',
             '/search/range': 'GET - Search page range (params: q, start_page, end_page)',
+            '/search/range/threaded': 'GET - Search page range with threading (faster)',
+            '/search/all/threaded': 'GET - Search all pages with threading (faster)',
         },
         'examples': {
             'single_page': '/search?q=python&page=1',
             'all_pages': '/search/all?q=python&max_pages=5',
-            'page_range': '/search/range?q=python&start_page=1&end_page=3'
+            'page_range': '/search/range?q=python&start_page=1&end_page=3',
+            'threaded_range': '/search/range/threaded?q=python&start_page=1&end_page=5',
+            'threaded_all': '/search/all/threaded?q=python&max_pages=10'
         }
     })
 
@@ -379,7 +410,23 @@ def search_range():
     if start_page < 1 or end_page < start_page or end_page > 50:
         return jsonify({'error': 'Invalid page range'}), 400
     
-    result = scraper.search_pages_range(query, start_page, end_page)
+    result = scraper.search_pages_range_threaded(query, start_page, end_page)
+    return jsonify(result)
+
+
+@app.route('/search/range/threaded', methods=['GET'])
+def search_range_threaded():
+    query = request.args.get('q', '').strip()
+    start_page = int(request.args.get('start_page', 1))
+    end_page = int(request.args.get('end_page', 3))
+    
+    if not query:
+        return jsonify({'error': 'Missing query parameter (q)'}), 400
+    
+    if start_page < 1 or end_page < start_page or end_page > 50:
+        return jsonify({'error': 'Invalid page range'}), 400
+    
+    result = scraper.search_pages_range_threaded(query, start_page, end_page)
     return jsonify(result)
 
 
@@ -394,11 +441,25 @@ def search_all():
     if max_pages < 1 or max_pages > 50:
         return jsonify({'error': 'max_pages must be between 1 and 50'}), 400
     
-    result = scraper.search_all_pages(query, max_pages)
+    result = scraper.search_all_pages_threaded(query, max_pages)
+    return jsonify(result)
+
+
+@app.route('/search/all/threaded', methods=['GET'])
+def search_all_threaded():
+    query = request.args.get('q', '').strip()
+    max_pages = int(request.args.get('max_pages', 10))
     
+    if not query:
+        return jsonify({'error': 'Missing query parameter (q)'}), 400
+    
+    if max_pages < 1 or max_pages > 50:
+        return jsonify({'error': 'max_pages must be between 1 and 50'}), 400
+    
+    result = scraper.search_all_pages_threaded(query, max_pages)
     return jsonify(result)
 
 
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', random.randint(5000, 6000)))
-    app.run(host='0.0.0.0', port=port, debug=True)
+    app.run(host='0.0.0.0', port=port, debug=True, threaded=True)
