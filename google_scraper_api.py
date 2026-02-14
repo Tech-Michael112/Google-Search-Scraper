@@ -11,8 +11,6 @@ import os
 import random
 from concurrent.futures import ThreadPoolExecutor, as_completed
 import threading
-import base64
-import hashlib
 
 app = Flask(__name__)
 
@@ -21,7 +19,6 @@ class GoogleSearchScraper:
         self.session = requests.Session()
         self.lock = threading.Lock()
         self.initialize_headers_and_cookies()
-        # Create images directory if it doesn't exist
         os.makedirs('downloaded_images', exist_ok=True)
 
     def get_cookies_from_api(self):
@@ -35,15 +32,8 @@ class GoogleSearchScraper:
             "SAPISID": "1yLWPeTBXAXw1b4c/ApzC4WZfpcRIIgkmc",
             "__Secure-1PAPISID": "1yLWPeTBXAXw1b4c/ApzC4WZfpcRIIgkmc",
             "__Secure-3PAPISID": "1yLWPeTBXAXw1b4c/ApzC4WZfpcRIIgkmc",
-            "__Secure-BUCKET": "CJgB",
-            "SEARCH_SAMESITE": "CgQIiKAB",
             "AEC": "AaJma5uu9hqnZGzXmcpCPmwi3kzY6Le8YkW9yUTATzXVDFcC6iGw5WAn8A",
-            "NID": "528=AfXqFmNc3S-X-wh274GiLVtpF4ps2mV_r5aqv8hBPSsfQNi_yvNtpLuSUixk1jYS_y5pBd_qmCMYvlGtrrUA0BrVtsgYEi2Ts3_iYvqAZ8CQuzVkabxMuwLFNzr_EQqNnb2O2ePH7y3jaMI3jkxCP9ntkLs4_W6EjgvA12KMsa7FcIQUjPazhREb-REGTzpO57pV5zEunYcW6plCYI3aBTUnC7HmuQ-iWsw89ONNG0VTOGvt1HN8BBPDmg3Dp2lhMeDf6RwxX7hMacwEIhZ_ib6jFkcdrkHa8xuvqZB5EPgk_zG_6CjlaMyc-_0tM5zaM5ylrZjimwSx4OPhDn2HCdQb9l_rf_AwcB-DAuDfQUh-mYKGbYuSaYNii7S-ZaLxxeOL0w8z8jru7Uo",
-            "__Secure-STRP": "AD6Dogs-v12aiTtlXbdRlneWMnAkA77cTPuDod7J6MAy-Qk9TJDRVQRrg3poLJbZSwQwRYdrYfl5H5v5W2mavTe0MfLQBdpEFg",
-            "DV": "U0Q-xZsTbixsIBy4P1MyROtg6z6LxRmI-LVhLnx5NgEAAGAUsbpzQL8ycwAAAJhcTY7CRtr7IgAAAAHw2_5TMtlDCgAAACKOl0gFWpnGAgAAAA",
-            "SIDCC": "AKEyXzXUGhYY3uQDEWo4eoe6LMCvO7scBDrYh9Pp-_L03vVfPmMJ-EMUQ1dOQ2rO9QyKFbprfQ",
-            "__Secure-1PSIDCC": "AKEyXzWz-lk8U1eLUQsntYll6u-vU9Lz_mw6UtAhgmsAKH7x2zxRDIr2AucPNi0cL2m3LNkMgw",
-            "__Secure-3PSIDCC": "AKEyXzVw-_S1H08RajM6CEmrcVDPBZtPvJMbKprmkJ9qRsw8h9wga5VFVkkggwedR9GyADlf7PA"
+            "NID": "528=AfXqFmNc3S-X-wh274GiLVtpF4ps2mV_r5aqv8hBPSsfQNi_yvNtpLuSUixk1jYS_y5pBd_qmCMYvlGtrrUA0BrVtsgYEi2Ts3_iYvqAZ8CQuzVkabxMuwLFNzr_EQqNnb2O2ePH7y3jaMI3jkxCP9ntkLs4_W6EjgvA12KMsa7FcIQUjPazhREb-REGTzpO57pV5zEunYcW6plCYI3aBTUnC7HmuQ-iWsw89ONNG0VTOGvt1HN8BBPDmg3Dp2lhMeDf6RwxX7hMacwEIhZ_ib6jFkcdrkHa8xuvqZB5EPgk_zG_6CjlaMyc-_0tM5zaM5ylrZjimwSx4OPhDn2HCdQb9l_rf_AwcB-DAuDfQUh-mYKGbYuSaYNii7S-ZaLxxeOL0w8z8jru7Uo"
         }
 
     def initialize_headers_and_cookies(self):
@@ -51,15 +41,6 @@ class GoogleSearchScraper:
             'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
             'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8',
             'Accept-Language': 'en-US,en;q=0.9',
-            'sec-ch-ua': '"Not_A Brand";v="8", "Chromium";v="120", "Google Chrome";v="120"',
-            'sec-ch-ua-mobile': '?0',
-            'sec-ch-ua-platform': '"Windows"',
-            'upgrade-insecure-requests': '1',
-            'sec-fetch-site': 'same-origin',
-            'sec-fetch-mode': 'navigate',
-            'sec-fetch-user': '?1',
-            'sec-fetch-dest': 'document',
-            'referer': 'https://www.google.com/',
         }
         
         self.current_cookies = self.get_cookies_from_api()
@@ -70,14 +51,159 @@ class GoogleSearchScraper:
         self.headers['Cookie'] = cookie_string
         self.session.cookies.update(self.current_cookies)
 
-    def download_image(self, img_url, img_title, index):
-        """Download a single image"""
+    def is_valid_result(self, result):
+        if not result.get('url'):
+            return False
+        if 'google.com/ackl' in result['url'] or 'googleadservices' in result['url']:
+            return False
+        if not result.get('title') or len(result['title']) < 3:
+            return False
+        return True
+
+    def parse_google_search_results(self, html_content):
+        soup = BeautifulSoup(html_content, 'html.parser')
+        results = []
+
+        for container in soup.select('div.g, div.MjjYud, div.tF2Cxc, div.rc'):
+            result = {
+                'date': '',
+                'description': '',
+                'snippet': '',
+                'source': '',
+                'title': '',
+                'type': 'regular',
+                'url': ''
+            }
+            
+            title = container.select_one('h3')
+            if title:
+                result['title'] = title.get_text(strip=True)
+            
+            link = container.find('a')
+            if link and link.get('href'):
+                href = link['href']
+                if href.startswith('/url?q='):
+                    result['url'] = href.split('/url?q=')[1].split('&')[0]
+                    result['url'] = urllib.parse.unquote(result['url'])
+                elif href.startswith('http'):
+                    result['url'] = href
+            
+            desc = container.select_one('.VwiC3b, .s3v9rd, .aCOpRe')
+            if desc:
+                result['description'] = desc.get_text(strip=True)
+            
+            source = container.select_one('cite, .iUh30')
+            if source:
+                result['source'] = source.get_text(strip=True)
+            
+            if self.is_valid_result(result):
+                results.append(result)
+
+        return results
+
+    def get_next_page_url(self, html_content):
+        soup = BeautifulSoup(html_content, 'html.parser')
+        next_link = soup.select_one('a#pnnext')
+        if next_link and next_link.get('href'):
+            return "https://www.google.com" + next_link.get('href')
+        return None
+
+    # ========== WEB SEARCH METHODS ==========
+    def fetch_page(self, query, start):
+        base_url = "https://www.google.com/search"
+        params = {'q': query, 'hl': 'en', 'start': start}
+        
         try:
-            # Create a safe filename
+            response = self.session.get(base_url, params=params, headers=self.headers, timeout=15)
+            response.raise_for_status()
+            results = self.parse_google_search_results(response.text)
+            
+            return {
+                'success': True,
+                'page': (start // 10) + 1,
+                'results': results,
+                'start': start
+            }
+        except Exception as e:
+            return {
+                'success': False,
+                'page': (start // 10) + 1,
+                'error': str(e),
+                'start': start
+            }
+
+    def search_single_page(self, query, start=0):
+        result = self.fetch_page(query, start)
+        
+        return {
+            'success': result['success'],
+            'page': result['page'],
+            'query': query,
+            'results': result.get('results', []),
+            'total_results': len(result.get('results', [])),
+            'next_page': True,
+            'next_start': start + 10 if result['success'] else None,
+            'timestamp': datetime.now().isoformat()
+        }
+
+    def search_pages_range_threaded(self, query, start_page=1, end_page=3):
+        all_results = []
+        seen_urls = set()
+        starts = [(page - 1) * 10 for page in range(start_page, end_page + 1)]
+        
+        with ThreadPoolExecutor(max_workers=min(5, len(starts))) as executor:
+            futures = {executor.submit(self.fetch_page, query, start): start for start in starts}
+            
+            for future in as_completed(futures):
+                result = future.result()
+                if result['success']:
+                    with self.lock:
+                        for item in result['results']:
+                            if item.get('url') and item['url'] not in seen_urls:
+                                seen_urls.add(item['url'])
+                                all_results.append(item)
+        
+        return {
+            'success': True,
+            'query': query,
+            'pages_scraped': f"{start_page}-{end_page}",
+            'total_results': len(all_results),
+            'results': all_results,
+            'timestamp': datetime.now().isoformat()
+        }
+
+    def search_all_pages_threaded(self, query, max_pages=10):
+        all_results = []
+        seen_urls = set()
+        starts = [(page - 1) * 10 for page in range(1, max_pages + 1)]
+        
+        with ThreadPoolExecutor(max_workers=min(5, max_pages)) as executor:
+            futures = {executor.submit(self.fetch_page, query, start): start for start in starts}
+            
+            for future in as_completed(futures):
+                result = future.result()
+                if result['success']:
+                    with self.lock:
+                        for item in result['results']:
+                            if item.get('url') and item['url'] not in seen_urls:
+                                seen_urls.add(item['url'])
+                                all_results.append(item)
+        
+        return {
+            'success': True,
+            'query': query,
+            'total_pages_scraped': max_pages,
+            'total_results': len(all_results),
+            'results': all_results,
+            'timestamp': datetime.now().isoformat()
+        }
+
+    # ========== IMAGE SEARCH METHODS ==========
+    def download_image(self, img_url, img_title, index):
+        try:
             safe_title = re.sub(r'[^\w\s-]', '', img_title).strip()[:50]
             filename = f"downloaded_images/{index}_{safe_title}.jpg"
             
-            # Download image
             img_response = requests.get(img_url, timeout=10, headers={
                 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
             })
@@ -101,11 +227,10 @@ class GoogleSearchScraper:
         return None
 
     def search_google_images(self, query, num_images=20, download=False):
-        """Search Google Images"""
         base_url = "https://www.google.com/search"
         params = {
             'q': query,
-            'tbm': 'isch',  # Image search
+            'tbm': 'isch',
             'hl': 'en',
             'num': num_images
         }
@@ -114,11 +239,9 @@ class GoogleSearchScraper:
             response = self.session.get(base_url, params=params, headers=self.headers, timeout=15)
             response.raise_for_status()
             
-            # Parse image results
             soup = BeautifulSoup(response.text, 'html.parser')
             images = []
             
-            # Find image elements
             img_tags = soup.find_all('img')
             
             for i, img in enumerate(img_tags):
@@ -126,45 +249,32 @@ class GoogleSearchScraper:
                     break
                     
                 img_url = img.get('src') or img.get('data-src')
-                if not img_url:
+                if not img_url or img_url.startswith('data:image'):
                     continue
                 
-                # Handle base64 images
-                if img_url.startswith('data:image'):
-                    continue
-                
-                # Get alt text for title
                 img_title = img.get('alt', f'Image_{i+1}')
                 
-                # Clean URL
                 if img_url.startswith('//'):
                     img_url = 'https:' + img_url
-                elif img_url.startswith('/'):
-                    img_url = 'https://www.google.com' + img_url
                 
-                image_data = {
+                images.append({
                     'index': i + 1,
                     'title': img_title,
                     'thumbnail_url': img_url,
-                    'full_url': None,  # Would need to click through to get full size
-                }
-                
-                images.append(image_data)
+                })
             
-            # Download images if requested
             downloaded = []
             if download and images:
                 with ThreadPoolExecutor(max_workers=5) as executor:
                     futures = []
-                    for i, img in enumerate(images):
-                        if img['thumbnail_url'] and not img['thumbnail_url'].startswith('data:'):
-                            future = executor.submit(
-                                self.download_image, 
-                                img['thumbnail_url'], 
-                                img['title'], 
-                                i+1
-                            )
-                            futures.append(future)
+                    for i, img in enumerate(images[:num_images]):
+                        future = executor.submit(
+                            self.download_image, 
+                            img['thumbnail_url'], 
+                            img['title'], 
+                            i+1
+                        )
+                        futures.append(future)
                     
                     for future in as_completed(futures):
                         result = future.result()
@@ -188,11 +298,8 @@ class GoogleSearchScraper:
             }
 
     def search_images_threaded(self, query, num_images=50, download=False):
-        """Search images using multiple threads for faster results"""
-        # Split into multiple requests to get more images
         images_per_page = 20
         num_pages = (num_images + images_per_page - 1) // images_per_page
-        
         all_images = []
         downloaded = []
         
@@ -203,7 +310,7 @@ class GoogleSearchScraper:
                     self.search_google_images,
                     query,
                     images_per_page,
-                    False  # Don't download in sub-threads
+                    False
                 )
                 futures.append(future)
             
@@ -212,19 +319,17 @@ class GoogleSearchScraper:
                 if result['success']:
                     all_images.extend(result['images'])
         
-        # Download if requested
         if download and all_images:
             with ThreadPoolExecutor(max_workers=5) as executor:
                 futures = []
                 for i, img in enumerate(all_images[:num_images]):
-                    if img['thumbnail_url'] and not img['thumbnail_url'].startswith('data:'):
-                        future = executor.submit(
-                            self.download_image,
-                            img['thumbnail_url'],
-                            img['title'],
-                            i+1
-                        )
-                        futures.append(future)
+                    future = executor.submit(
+                        self.download_image,
+                        img['thumbnail_url'],
+                        img['title'],
+                        i+1
+                    )
+                    futures.append(future)
                 
                 for future in as_completed(futures):
                     result = future.result()
@@ -250,21 +355,80 @@ def home():
         'status': 'Google Search Scraper API',
         'version': '1.0',
         'endpoints': {
-            '/search': 'GET - Search web pages (params: q, page)',
-            '/search/all': 'GET - Search all web pages (params: q, max_pages)',
+            # Web search
+            '/search': 'GET - Search single page (params: q, page)',
+            '/search/range/threaded': 'GET - Search page range with threading (params: q, start_page, end_page)',
+            '/search/all/threaded': 'GET - Search all pages with threading (params: q, max_pages)',
+            
+            # Image search
             '/images': 'GET - Search images (params: q, num, download)',
             '/images/threaded': 'GET - Search images with threading (params: q, num, download)',
             '/download/<filename>': 'GET - Download a specific image'
         },
         'examples': {
-            'web_search': '/search?q=python&page=1',
-            'image_search': '/images?q=cats&num=20',
-            'image_search_download': '/images?q=cats&num=10&download=true',
-            'threaded_images': '/images/threaded?q=cats&num=50&download=true'
+            # Web search
+            'single_page': '/search?q=python&page=1',
+            'range_fast': '/search/range/threaded?q=python&start_page=1&end_page=3',
+            'all_fast': '/search/all/threaded?q=python&max_pages=5',
+            
+            # Image search
+            'images': '/images?q=cats&num=20',
+            'images_download': '/images?q=cats&num=10&download=true',
+            'images_fast': '/images/threaded?q=cats&num=50&download=true'
         }
     })
 
 
+# ========== WEB SEARCH ROUTES ==========
+@app.route('/search', methods=['GET'])
+def search():
+    query = request.args.get('q', '').strip()
+    page = int(request.args.get('page', 1))
+    
+    if not query:
+        return jsonify({'error': 'Missing query parameter (q)'}), 400
+    
+    if page < 1:
+        return jsonify({'error': 'Page must be >= 1'}), 400
+    
+    start = (page - 1) * 10
+    result = scraper.search_single_page(query, start)
+    
+    return jsonify(result)
+
+
+@app.route('/search/range/threaded', methods=['GET'])
+def search_range_threaded():
+    query = request.args.get('q', '').strip()
+    start_page = int(request.args.get('start_page', 1))
+    end_page = int(request.args.get('end_page', 3))
+    
+    if not query:
+        return jsonify({'error': 'Missing query parameter (q)'}), 400
+    
+    if start_page < 1 or end_page < start_page or end_page > 50:
+        return jsonify({'error': 'Invalid page range'}), 400
+    
+    result = scraper.search_pages_range_threaded(query, start_page, end_page)
+    return jsonify(result)
+
+
+@app.route('/search/all/threaded', methods=['GET'])
+def search_all_threaded():
+    query = request.args.get('q', '').strip()
+    max_pages = int(request.args.get('max_pages', 10))
+    
+    if not query:
+        return jsonify({'error': 'Missing query parameter (q)'}), 400
+    
+    if max_pages < 1 or max_pages > 50:
+        return jsonify({'error': 'max_pages must be between 1 and 50'}), 400
+    
+    result = scraper.search_all_pages_threaded(query, max_pages)
+    return jsonify(result)
+
+
+# ========== IMAGE SEARCH ROUTES ==========
 @app.route('/images', methods=['GET'])
 def search_images():
     query = request.args.get('q', '').strip()
@@ -299,43 +463,10 @@ def search_images_threaded():
 
 @app.route('/download/<filename>')
 def download_file(filename):
-    """Download a specific image file"""
     try:
         return send_file(f'downloaded_images/{filename}', as_attachment=True)
     except:
         return jsonify({'error': 'File not found'}), 404
-
-
-@app.route('/search', methods=['GET'])
-def search():
-    query = request.args.get('q', '').strip()
-    page = int(request.args.get('page', 1))
-    
-    if not query:
-        return jsonify({'error': 'Missing query parameter (q)'}), 400
-    
-    if page < 1:
-        return jsonify({'error': 'Page must be >= 1'}), 400
-    
-    start = (page - 1) * 10
-    result = scraper.search_single_page(query, start)
-    
-    return jsonify(result)
-
-
-@app.route('/search/all', methods=['GET'])
-def search_all():
-    query = request.args.get('q', '').strip()
-    max_pages = int(request.args.get('max_pages', 10))
-    
-    if not query:
-        return jsonify({'error': 'Missing query parameter (q)'}), 400
-    
-    if max_pages < 1 or max_pages > 50:
-        return jsonify({'error': 'max_pages must be between 1 and 50'}), 400
-    
-    result = scraper.search_all_pages_threaded(query, max_pages)
-    return jsonify(result)
 
 
 if __name__ == '__main__':
