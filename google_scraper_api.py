@@ -8,6 +8,7 @@ import re
 from datetime import datetime
 import requests
 import os
+import random
 
 app = Flask(__name__)
 
@@ -253,11 +254,41 @@ class GoogleSearchScraper:
                 'page': (start // 10) + 1
             }
 
+    def search_pages_range(self, query, start_page=1, end_page=3):
+        """Search multiple pages and return combined results"""
+        all_results = []
+        seen_urls = set()
+        current_page = start_page
+        
+        while current_page <= end_page:
+            start = (current_page - 1) * 10
+            result = self.search_single_page(query, start)
+            
+            if result['success']:
+                for item in result['results']:
+                    if item.get('url') and item['url'] not in seen_urls:
+                        seen_urls.add(item['url'])
+                        all_results.append(item)
+            
+            current_page += 1
+            if current_page <= end_page:
+                time.sleep(1)
+        
+        return {
+            'success': True,
+            'query': query,
+            'pages_scraped': f"{start_page}-{end_page}",
+            'total_results': len(all_results),
+            'results': all_results,
+            'timestamp': datetime.now().isoformat()
+        }
+
     def search_all_pages(self, query, max_pages=10):
         base_url = "https://www.google.com/search"
         params = {'q': query, 'hl': 'en', 'num': 10}
 
         all_results = []
+        seen_urls = set()
         current_page = 1
         next_url = None
 
@@ -272,7 +303,11 @@ class GoogleSearchScraper:
 
                 response.raise_for_status()
                 page_data = self.parse_google_search_results(response.text)
-                all_results.extend(page_data['results'])
+                
+                for result in page_data['results']:
+                    if result.get('url') and result['url'] not in seen_urls:
+                        seen_urls.add(result['url'])
+                        all_results.append(result)
                 
                 next_url = self.get_next_page_url(response.text)
                 
@@ -305,10 +340,12 @@ def home():
         'endpoints': {
             '/search': 'GET - Search single page (params: q, page)',
             '/search/all': 'GET - Search all pages (params: q, max_pages)',
+            '/search/range': 'GET - Search page range (params: q, start_page, end_page)',
         },
         'examples': {
             'single_page': '/search?q=python&page=1',
-            'all_pages': '/search/all?q=python&max_pages=5'
+            'all_pages': '/search/all?q=python&max_pages=5',
+            'page_range': '/search/range?q=python&start_page=1&end_page=3'
         }
     })
 
@@ -330,6 +367,22 @@ def search():
     return jsonify(result)
 
 
+@app.route('/search/range', methods=['GET'])
+def search_range():
+    query = request.args.get('q', '').strip()
+    start_page = int(request.args.get('start_page', 1))
+    end_page = int(request.args.get('end_page', 3))
+    
+    if not query:
+        return jsonify({'error': 'Missing query parameter (q)'}), 400
+    
+    if start_page < 1 or end_page < start_page or end_page > 50:
+        return jsonify({'error': 'Invalid page range'}), 400
+    
+    result = scraper.search_pages_range(query, start_page, end_page)
+    return jsonify(result)
+
+
 @app.route('/search/all', methods=['GET'])
 def search_all():
     query = request.args.get('q', '').strip()
@@ -347,7 +400,5 @@ def search_all():
 
 
 if __name__ == '__main__':
-    import random
-    # Try to use Railway's PORT, but if not available, use a random port between 5000-6000
     port = int(os.environ.get('PORT', random.randint(5000, 6000)))
     app.run(host='0.0.0.0', port=port, debug=True)
