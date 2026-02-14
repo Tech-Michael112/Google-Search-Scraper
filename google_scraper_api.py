@@ -11,8 +11,12 @@ import os
 import random
 from concurrent.futures import ThreadPoolExecutor, as_completed
 import threading
+app.config['JSONIFY_PRETTYPRINT_REGULAR'] = True
 
+# OR set it when creating the Flask app:
 app = Flask(__name__)
+app.config['JSONIFY_PRETTYPRINT_REGULAR'] = True
+#app = Flask(__name__)
 
 class GoogleSearchScraper:
     def __init__(self):
