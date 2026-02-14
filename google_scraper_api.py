@@ -33,14 +33,47 @@ class GoogleSearchScraper:
             "__Secure-1PAPISID": "1yLWPeTBXAXw1b4c/ApzC4WZfpcRIIgkmc",
             "__Secure-3PAPISID": "1yLWPeTBXAXw1b4c/ApzC4WZfpcRIIgkmc",
             "AEC": "AaJma5uu9hqnZGzXmcpCPmwi3kzY6Le8YkW9yUTATzXVDFcC6iGw5WAn8A",
-            "NID": "528=AfXqFmNc3S-X-wh274GiLVtpF4ps2mV_r5aqv8hBPSsfQNi_yvNtpLuSUixk1jYS_y5pBd_qmCMYvlGtrrUA0BrVtsgYEi2Ts3_iYvqAZ8CQuzVkabxMuwLFNzr_EQqNnb2O2ePH7y3jaMI3jkxCP9ntkLs4_W6EjgvA12KMsa7FcIQUjPazhREb-REGTzpO57pV5zEunYcW6plCYI3aBTUnC7HmuQ-iWsw89ONNG0VTOGvt1HN8BBPDmg3Dp2lhMeDf6RwxX7hMacwEIhZ_ib6jFkcdrkHa8xuvqZB5EPgk_zG_6CjlaMyc-_0tM5zaM5ylrZjimwSx4OPhDn2HCdQb9l_rf_AwcB-DAuDfQUh-mYKGbYuSaYNii7S-ZaLxxeOL0w8z8jru7Uo"
+            "DV": "U0Q-xZsTbix8ANnp3MkihgvKHfq8xZlw4P5MyRCtw4dcAGByNTkKG2nvGyIXACDieIlUoJVphMgFACDi14a58OXZI3IBgFHE6s4B_coMilwAEAC_7T8lkz1UIxcAAA",
+            "__Secure-STRP": "AD6DogslGWMoDErEJDGFyAbD5IYXvQ9QrU_1W6SlgjxkZvIInSQ7SGhtqK0PQaEPhfZpN2_mr-tgAMCDvLpZmWTaW7p18M6YUnFO",
+            "NID": "529=ZrNRQlwwKM4zXeTtoj1XoCVUgb7ZDJrbZ5E1z77NedH-NWx0Wu3u9Ex2YD4YhdOlLGLiladLJqHmbS5Ns_UKwISl8Mx9T2di0BqvhDPBLeLq2lxeJ0_eX-J0hu2nM-uoQfoum6oQSIO2XFKyCgKFkA5O_1dTe7flwLRT5EMXAp3uYn6FdP7alc4P-mCwnzQTUUD5XS4oh2OIbYhjOTdyA1NpnXr0Nicw07Fv2Bx2Gn9jAvIIzzNkgyqsTZPvMoUpljns29_PD5eOKaXoq0z1Z9MeRoCcvVNnPqG0EW568WIz4MNvrkjeRtvaILRUEF04XRnOmPnHTLHDkqYz-U5j-w8hcPoYLLKR3NJQOwPz6ULMFkU60_PSS9ClFWZy9UxfQGp_4mx_GnN0Qow",
+            "SIDCC": "AKEyXzUOk6L7gxF_dJGz5uRCBb8G_YjYeCeTe4db8F2DAtSY-gBQvx5yZBueUo8AAV2Q6DX-Qg",
+            "__Secure-1PSIDCC": "AKEyXzWTKIg-PavJJEUSazeiz7q5r-GdhaxQe22UqFb89ZqKL7jCeBGVsQr1uXgQBQ66Kb6JgA",
+            "__Secure-3PSIDCC": "AKEyXzUVDxbvG3Z0d4QSF9DjewE592J9sfG8x4o2JzEzS0_WpHhJGPxCdt-5mQ0hKUo3oE8E1SU"
         }
 
     def initialize_headers_and_cookies(self):
         self.headers = {
-            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-            'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8',
-            'Accept-Language': 'en-US,en;q=0.9',
+            'User-Agent': "Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0.0.0 Mobile Safari/537.36",
+            'Accept': "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7",
+            'Accept-Encoding': "gzip, deflate, br, zstd",
+            'Accept-Language': "en-US,en;q=0.9",
+            'rtt': "250",
+            'downlink': "3.65",
+            'sec-ch-ua': '"Chromium";v="140", "Not=A?Brand";v="24", "Google Chrome";v="140"',
+            'sec-ch-ua-mobile': "?1",
+            'sec-ch-ua-full-version': '"140.0.7339.207"',
+            'sec-ch-ua-arch': '""',
+            'sec-ch-ua-platform': '"Android"',
+            'sec-ch-ua-platform-version': '"15.0.0"',
+            'sec-ch-ua-model': '"2510DRA23G"',
+            'sec-ch-ua-bitness': '""',
+            'sec-ch-ua-wow64': "?0",
+            'sec-ch-ua-full-version-list': '"Chromium";v="140.0.7339.207", "Not=A?Brand";v="24.0.0.0", "Google Chrome";v="140.0.7339.207"',
+            'sec-ch-ua-form-factors': '"Mobile"',
+            'sec-ch-prefers-color-scheme': "dark",
+            'upgrade-insecure-requests': "1",
+            'x-chrome-connected': "source=Chrome,mode=0,enable_account_consistency=true,supervised=false,consistency_enabled_by_default=false",
+            'x-browser-channel': "stable",
+            'x-browser-year': "2025",
+            'x-browser-validation': "sa/BMelw7zzqFIJ9TfB82t336ew=",
+            'x-browser-copyright': "Copyright 2025 Google LLC. All rights reserved.",
+            'x-client-data': "CI+2yQEIpLbJAQipncoBCPTfygEIlqHLAQiKoM0BCLHDzQEI08/NAQjVz80BCNnXzQEI29fNAQiVjM8BCNKtzwE=",
+            'sec-fetch-site': "same-origin",
+            'sec-fetch-mode': "navigate",
+            'sec-fetch-user': "?1",
+            'sec-fetch-dest': "document",
+            'referer': "https://www.google.com/",
+            'priority': "u=0, i",
         }
         
         self.current_cookies = self.get_cookies_from_api()
@@ -111,7 +144,12 @@ class GoogleSearchScraper:
     # ========== WEB SEARCH METHODS ==========
     def fetch_page(self, query, start):
         base_url = "https://www.google.com/search"
-        params = {'q': query, 'hl': 'en', 'start': start}
+        params = {
+            'q': query, 
+            'hl': 'en', 
+            'start': start,
+            'client': "ms-android-xiaomi-terr1-rso2",
+        }
         
         try:
             response = self.session.get(base_url, params=params, headers=self.headers, timeout=15)
@@ -199,10 +237,56 @@ class GoogleSearchScraper:
         }
 
     # ========== IMAGE SEARCH METHODS ==========
+    def extract_image_urls(self, html_content):
+        """Extract image URLs from Google Image Search response"""
+        image_urls = []
+        
+        # Method 1: Look for image URLs in script tags
+        soup = BeautifulSoup(html_content, 'html.parser')
+        scripts = soup.find_all('script')
+        
+        for script in scripts:
+            if script.string:
+                # Look for image URLs in various formats
+                # Pattern for http/https image URLs
+                patterns = [
+                    r'https?://[^\s"\'\\]+\.(?:jpg|jpeg|png|gif|webp|bmp|svg)[^\s"\'\\]*',
+                    r'\["([^"]+\.(?:jpg|jpeg|png|gif|webp))"',
+                    r'"(https?://[^"]+\.(?:jpg|jpeg|png|gif|webp))"',
+                ]
+                
+                for pattern in patterns:
+                    matches = re.findall(pattern, script.string, re.I)
+                    for match in matches:
+                        # Clean up the URL
+                        url = match if isinstance(match, str) else match[0]
+                        if url.startswith('http') and not any(x in url for x in ['google.com', 'gstatic.com', 'logo']):
+                            if url not in image_urls:
+                                image_urls.append(url)
+        
+        # Method 2: Look in img tags as fallback
+        img_tags = soup.find_all('img')
+        for img in img_tags:
+            for attr in ['src', 'data-src']:
+                url = img.get(attr)
+                if url and url.startswith('http') and 'gstatic.com' not in url:
+                    if re.search(r'\.(jpg|jpeg|png|gif|webp)', url, re.I):
+                        if url not in image_urls:
+                            image_urls.append(url)
+        
+        return image_urls
+
     def download_image(self, img_url, img_title, index):
         try:
             safe_title = re.sub(r'[^\w\s-]', '', img_title).strip()[:50]
-            filename = f"downloaded_images/{index}_{safe_title}.jpg"
+            if not safe_title:
+                safe_title = f"image_{index}"
+            
+            # Get file extension from URL
+            ext_match = re.search(r'\.(jpg|jpeg|png|gif|webp)', img_url, re.I)
+            ext = ext_match.group(1) if ext_match else 'jpg'
+            
+            filename = f"downloaded_images/{index}_{safe_title}.{ext}"
             
             img_response = requests.get(img_url, timeout=10, headers={
                 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
@@ -214,7 +298,7 @@ class GoogleSearchScraper:
                 return {
                     'success': True,
                     'filename': filename,
-                    'title': img_title,
+                    'title': safe_title,
                     'url': img_url
                 }
         except Exception as e:
@@ -227,39 +311,43 @@ class GoogleSearchScraper:
         return None
 
     def search_google_images(self, query, num_images=20, download=False):
-        base_url = "https://www.google.com/search"
+        url = "https://www.google.com/search"
+        
         params = {
+            'client': "ms-android-xiaomi-terr1-rso2",
+            'hs': "tkLp",
+            'sca_esv': "c792f36581e0cd30",
+            'sxsrf': f"ANbL-n4ZJxtNraX9CQi3qqWLUH92svjwag:{int(time.time())}",
+            'udm': "2",
+            'fbs': "ADc_l-aN0CWEZBOHjofHoaMMDiKpaEWjvZ2Py1XXV8d8KvlI3vWUtYx0DZdicpfE1faGYenqWn-q4MFiFFtvJjTKeAVxBf9XF8ByrMpEedseJb6C24e7QdJQdIE3TPpl5mEwf0HZUp1chSl04q3NzUG-sivE9fh2upv_LUl1i41J2OLX0ntDV3FbKmN59pJf5BBarEFT9msi8Zx3tjpgPrbRkWHc8AvYww",
             'q': query,
-            'tbm': 'isch',
-            'hl': 'en',
-            'num': num_images
+            'sa': "X",
+            'ved': "2ahUKEwjG1JDr6diSAxWfdUEAHcMPCEkQtKgLegQIEhAB",
+            'biw': "384",
+            'bih': "707",
+            'dpr': "2.81"
         }
 
         try:
-            response = self.session.get(base_url, params=params, headers=self.headers, timeout=15)
+            response = self.session.get(url, params=params, headers=self.headers, timeout=15)
             response.raise_for_status()
             
-            soup = BeautifulSoup(response.text, 'html.parser')
+            # Extract image URLs
+            all_image_urls = self.extract_image_urls(response.text)
+            
+            # Remove duplicates and limit to requested number
+            unique_urls = []
+            seen = set()
+            for url in all_image_urls:
+                if url not in seen and len(unique_urls) < num_images:
+                    seen.add(url)
+                    unique_urls.append(url)
+            
             images = []
-            
-            img_tags = soup.find_all('img')
-            
-            for i, img in enumerate(img_tags):
-                if i >= num_images:
-                    break
-                    
-                img_url = img.get('src') or img.get('data-src')
-                if not img_url or img_url.startswith('data:image'):
-                    continue
-                
-                img_title = img.get('alt', f'Image_{i+1}')
-                
-                if img_url.startswith('//'):
-                    img_url = 'https:' + img_url
-                
+            for i, img_url in enumerate(unique_urls):
                 images.append({
                     'index': i + 1,
-                    'title': img_title,
+                    'title': f"{query} image {i+1}",
                     'thumbnail_url': img_url,
                 })
             
@@ -267,11 +355,11 @@ class GoogleSearchScraper:
             if download and images:
                 with ThreadPoolExecutor(max_workers=5) as executor:
                     futures = []
-                    for i, img in enumerate(images[:num_images]):
+                    for i, img in enumerate(images):
                         future = executor.submit(
                             self.download_image, 
                             img['thumbnail_url'], 
-                            img['title'], 
+                            f"{query}_{i+1}", 
                             i+1
                         )
                         futures.append(future)
@@ -298,52 +386,8 @@ class GoogleSearchScraper:
             }
 
     def search_images_threaded(self, query, num_images=50, download=False):
-        images_per_page = 20
-        num_pages = (num_images + images_per_page - 1) // images_per_page
-        all_images = []
-        downloaded = []
-        
-        with ThreadPoolExecutor(max_workers=min(3, num_pages)) as executor:
-            futures = []
-            for page in range(num_pages):
-                future = executor.submit(
-                    self.search_google_images,
-                    query,
-                    images_per_page,
-                    False
-                )
-                futures.append(future)
-            
-            for future in as_completed(futures):
-                result = future.result()
-                if result['success']:
-                    all_images.extend(result['images'])
-        
-        if download and all_images:
-            with ThreadPoolExecutor(max_workers=5) as executor:
-                futures = []
-                for i, img in enumerate(all_images[:num_images]):
-                    future = executor.submit(
-                        self.download_image,
-                        img['thumbnail_url'],
-                        img['title'],
-                        i+1
-                    )
-                    futures.append(future)
-                
-                for future in as_completed(futures):
-                    result = future.result()
-                    if result and result['success']:
-                        downloaded.append(result)
-        
-        return {
-            'success': True,
-            'query': query,
-            'total_images': len(all_images[:num_images]),
-            'images': all_images[:num_images],
-            'downloaded': downloaded,
-            'timestamp': datetime.now().isoformat()
-        }
+        # For now, just use the regular method since it's working well
+        return self.search_google_images(query, num_images, download)
 
 
 scraper = GoogleSearchScraper()
