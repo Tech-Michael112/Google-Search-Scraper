@@ -18,6 +18,8 @@ class GoogleSearchScraper:
     def __init__(self):
         self.session = requests.Session()
         self.lock = threading.Lock()
+
+        
         self.initialize_headers_and_cookies()
         os.makedirs('downloaded_images', exist_ok=True)
 
