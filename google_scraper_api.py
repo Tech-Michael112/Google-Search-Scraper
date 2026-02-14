@@ -82,8 +82,12 @@ class GoogleSearchScraper:
     def parse_google_search_results(self, html_content):
         soup = BeautifulSoup(html_content, 'html.parser')
         results = []
+        seen_urls = set()
 
-        for container in soup.select('div.g, div.MjjYud, div.tF2Cxc, div.rc'):
+        # Try multiple selectors in priority order
+        containers = soup.select('div.MjjYud') or soup.select('div.tF2Cxc') or soup.select('div.g') or soup.select('div.rc')
+        
+        for container in containers:
             result = {
                 'date': '',
                 'description': '',
@@ -107,15 +111,17 @@ class GoogleSearchScraper:
                 elif href.startswith('http'):
                     result['url'] = href
             
-            desc = container.select_one('.VwiC3b, .s3v9rd, .aCOpRe')
+            desc = container.select_one('.VwiC3b, .s3v9rd, .aCOpRe, .yDYNvb')
             if desc:
                 result['description'] = desc.get_text(strip=True)
             
-            source = container.select_one('cite, .iUh30')
+            source = container.select_one('cite, .iUh30, .tjvcx')
             if source:
                 result['source'] = source.get_text(strip=True)
             
-            if self.is_valid_result(result):
+            # Only add if valid and not already seen
+            if self.is_valid_result(result) and result['url'] not in seen_urls:
+                seen_urls.add(result['url'])
                 results.append(result)
 
         return results
