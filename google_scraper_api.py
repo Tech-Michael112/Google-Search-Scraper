@@ -23,25 +23,37 @@ class GoogleSearchScraper:
 
     def get_cookies_from_api(self):
         return {
-            "SID": "g.a0006QgzClcDNP7pW-T_YmGqp6eM4RFSfEP7vhSD7Cb8YgBgfn_hA0qRDYqQt59KsT4rcfqqigACgYKAbgSARESFQHGX2MiO6wgsORLoTshqWiFxHvsSxoVAUF8yKoaOCKKD_VpNzx3xSFkHfGo0076",
-            "__Secure-1PSID": "g.a0006QgzClcDNP7pW-T_YmGqp6eM4RFSfEP7vhSD7Cb8YgBgfn_hKh1pGleTRJUQpbS31E7MVQACgYKAdYSARESFQHGX2MimiZ9BB9h9e9JAFUVnTY13xoVAUF8yKrAROrx4q5SCMUmKa31TirQ0076",
-            "__Secure-3PSID": "g.a0006QgzClcDNP7pW-T_YmGqp6eM4RFSfEP7vhSD7Cb8YgBgfn_hdfHctwd_WoR1vEuljnnFgwACgYKAWwSARESFQHGX2MirCMVebTbpJGSpt4oc1FHLRoVAUF8yKozH-Tque28j2CiCGgsWkjb0076",
-            "HSID": "AFCrzVkaSTW0t8BDH",
-            "SSID": "AY7bU1zbNnyOT6-XJ",
-            "APISID": "Syfw_KQwYvSIZ7RT/AQSJ89iPhLG_drtjt",
-            "SAPISID": "1yLWPeTBXAXw1b4c/ApzC4WZfpcRIIgkmc",
-            "__Secure-1PAPISID": "1yLWPeTBXAXw1b4c/ApzC4WZfpcRIIgkmc",
-            "__Secure-3PAPISID": "1yLWPeTBXAXw1b4c/ApzC4WZfpcRIIgkmc",
-            "AEC": "AaJma5uu9hqnZGzXmcpCPmwi3kzY6Le8YkW9yUTATzXVDFcC6iGw5WAn8A",
-            "NID": "528=AfXqFmNc3S-X-wh274GiLVtpF4ps2mV_r5aqv8hBPSsfQNi_yvNtpLuSUixk1jYS_y5pBd_qmCMYvlGtrrUA0BrVtsgYEi2Ts3_iYvqAZ8CQuzVkabxMuwLFNzr_EQqNnb2O2ePH7y3jaMI3jkxCP9ntkLs4_W6EjgvA12KMsa7FcIQUjPazhREb-REGTzpO57pV5zEunYcW6plCYI3aBTUnC7HmuQ-iWsw89ONNG0VTOGvt1HN8BBPDmg3Dp2lhMeDf6RwxX7hMacwEIhZ_ib6jFkcdrkHa8xuvqZB5EPgk_zG_6CjlaMyc-_0tM5zaM5ylrZjimwSx4OPhDn2HCdQb9l_rf_AwcB-DAuDfQUh-mYKGbYuSaYNii7S-ZaLxxeOL0w8z8jru7Uo"
-        }
+            "SID=g.a0006QgzClcDNP7pW-T_YmGqp6eM4RFSfEP7vhSD7Cb8YgBgfn_hA0qRDYqQt59KsT4rcfqqigACgYKAbgSARESFQHGX2MiO6wgsORLoTshqWiFxHvsSxoVAUF8yKoaOCKKD_VpNzx3xSFkHfGo0076; __Secure-1PSID=g.a0006QgzClcDNP7pW-T_YmGqp6eM4RFSfEP7vhSD7Cb8YgBgfn_hKh1pGleTRJUQpbS31E7MVQACgYKAdYSARESFQHGX2MimiZ9BB9h9e9JAFUVnTY13xoVAUF8yKrAROrx4q5SCMUmKa31TirQ0076; __Secure-3PSID=g.a0006QgzClcDNP7pW-T_YmGqp6eM4RFSfEP7vhSD7Cb8YgBgfn_hdfHctwd_WoR1vEuljnnFgwACgYKAWwSARESFQHGX2MirCMVebTbpJGSpt4oc1FHLRoVAUF8yKozH-Tque28j2CiCGgsWkjb0076; HSID=AFCrzVkaSTW0t8BDH; SSID=AY7bU1zbNnyOT6-XJ; APISID=Syfw_KQwYvSIZ7RT/AQSJ89iPhLG_drtjt; SAPISID=1yLWPeTBXAXw1b4c/ApzC4WZfpcRIIgkmc; __Secure-1PAPISID=1yLWPeTBXAXw1b4c/ApzC4WZfpcRIIgkmc; __Secure-3PAPISID=1yLWPeTBXAXw1b4c/ApzC4WZfpcRIIgkmc; __Secure-BUCKET=CJgB; SEARCH_SAMESITE=CgQIk6AB; AEC=AaJma5uw_Jq_Wdmjj8Tf1v3T-kQTa4kR9RgQ4HC4BsDx8Lfy-ddj3VfcGg; DV=U0Q-xZsTbixsACJ-bZgLX55dmtPKxplw4P5MyRCtAwIAAGDFgJ1aPE2BvQAAALDxvkO948-MMAAAAHxNtg6drFzxEAAAgEd3PB5P1eMpBAAAAA; NID=529=wMqN81nyLfNq3uEIFJoCigdccvxIf9QmjHm4aZA5fzVd3-xgZiT0ZOoPlBufpQIgJm87oqxMODuW23M_T9PPVWJ098HMLI54I6SyMHkGThEnUXMK8LjZ-WNyYYf5ADFXxrMc3DcRreXDsnHSB8flbZF1pfFrA3KdQqe_JqFmSNFqPpmcsA_vObmUNVTWHitwXBvFeLrVLg24_B8EggiJA-jTwgVa1ofOqaXVhvA6kqpZhpviuDU-wmK2eDcxEwq3XUQDEgjicrnw1WSE9-G6k1FTqaeFrU7leHNgq8bBYm8yAhrXdA02D0jVx-_jZnw39nSpTppjbORsvTprmqdtQ2Ck_fVYWqK_OvAZ1nFBXzK5ikF2ATrAj26tlQWaakRxHzC7qeVjbMGoSzQpZszal9r6EbMBa1rhGU3_Rdy2dCcYvSL9; SIDCC=AKEyXzX5oIHkaDpJk_UISD9wYXbFz8qgnPtV7QT3_YTrm39nhOqjqb5okMcVY8c4bg2eb1i4Kw; __Secure-1PSIDCC=AKEyXzVVocXPBGfE-xwMEwmDaDIyC4Ek7BmBe3TZHSolblk5wWp4o_dSpy2qnjv7MZEwRqpvdA; __Secure-3PSIDCC=AKEyXzU_i0ZnVVFD44I5-rv74QaP5ZO8qwBAzRF403-fr79Y50IELwCz44AKSIwWYxtfJPvFlyo; __Secure-STRP=AD6DogvFh7iJgaiAZjraKtlwnR966gpAQLn-0CQ4sNNAU7R-K2x3F_8yvoSNXe2FMnqLG9aJmfe1WBJX0gbQlllB3FeRS_MtgBFI"}
 
     def initialize_headers_and_cookies(self):
         self.headers = {
-            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-            'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8',
-            'Accept-Language': 'en-US,en;q=0.9',
-        }
+            'User-Agent': "Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0.0.0 Mobile Safari/537.36",
+#  'Accept-Encoding': "gzip, deflate, br, zstd",
+  'downlink': "0.9",
+  'sec-ch-ua-full-version-list': "\"Chromium\";v=\"140.0.7339.207\", \"Not=A?Brand\";v=\"24.0.0.0\", \"Google Chrome\";v=\"140.0.7339.207\"",
+  'sec-ch-ua-platform': "\"Android\"",
+  'sec-ch-ua': "\"Chromium\";v=\"140\", \"Not=A?Brand\";v=\"24\", \"Google Chrome\";v=\"140\"",
+  'sec-ch-ua-bitness': "\"\"",
+  'sec-ch-ua-model': "\"2510DRA23G\"",
+  'sec-ch-ua-mobile': "?1",
+  'sec-ch-ua-form-factors': "\"Mobile\"",
+  'sec-ch-ua-wow64': "?0",
+  'sec-ch-ua-arch': "\"\"",
+  'sec-ch-ua-full-version': "\"140.0.7339.207\"",
+  'sec-ch-prefers-color-scheme': "dark",
+  'rtt': "100",
+  'sec-ch-ua-platform-version': "\"15.0.0\"",
+  'x-browser-channel': "stable",
+  'x-browser-year': "2025",
+#  'x-browser-validation': "sa/BMelw7zzqFIJ9TfB82t336ew=",
+  'x-browser-copyright': "Copyright 2025 Google LLC. All rights reserved.",
+#  'x-client-data': "CI+2yQEIpLbJAQipncoBCPTfygEIkqHLAQiKoM0BCJWMzwEI0q3PAQ==",
+  'sec-fetch-site': "same-origin",
+  'sec-fetch-mode': "cors",
+  'sec-fetch-dest': "empty",
+  'referer': "https://www.google.com/",
+  'accept-language': "en-US,en;q=0.9",
+  'priority': "u=1, i",}
         
         self.current_cookies = self.get_cookies_from_api()
         self.update_cookie_header()
