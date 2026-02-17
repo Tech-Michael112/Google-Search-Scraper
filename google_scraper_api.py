@@ -44,8 +44,7 @@ class GoogleSearchScraper:
     }
     def initialize_headers_and_cookies(self):
         self.headers = {
-            'User-Agent': "Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0.0.0 Mobile Safari/537.36",
-#  'Accept-Encoding': "gzip, deflate, br, zstd",
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
   'downlink': "0.9",
   'sec-ch-ua-full-version-list': "\"Chromium\";v=\"140.0.7339.207\", \"Not=A?Brand\";v=\"24.0.0.0\", \"Google Chrome\";v=\"140.0.7339.207\"",
   'sec-ch-ua-platform': "\"Android\"",
