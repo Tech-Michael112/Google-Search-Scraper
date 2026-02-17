@@ -23,53 +23,53 @@ class GoogleSearchScraper:
 
     def get_cookies_from_api(self):
         return {
-        "SID": "g.a0006QgzClcDNP7pW-T_YmGqp6eM4RFSfEP7vhSD7Cb8YgBgfn_hA0qRDYqQt59KsT4rcfqqigACgYKAbgSARESFQHGX2MiO6wgsORLoTshqWiFxHvsSxoVAUF8yKoaOCKKD_VpNzx3xSFkHfGo0076",
-        "__Secure-1PSID": "g.a0006QgzClcDNP7pW-T_YmGqp6eM4RFSfEP7vhSD7Cb8YgBgfn_hKh1pGleTRJUQpbS31E7MVQACgYKAdYSARESFQHGX2MimiZ9BB9h9e9JAFUVnTY13xoVAUF8yKrAROrx4q5SCMUmKa31TirQ0076",
-        "__Secure-3PSID": "g.a0006QgzClcDNP7pW-T_YmGqp6eM4RFSfEP7vhSD7Cb8YgBgfn_hdfHctwd_WoR1vEuljnnFgwACgYKAWwSARESFQHGX2MirCMVebTbpJGSpt4oc1FHLRoVAUF8yKozH-Tque28j2CiCGgsWkjb0076",
-        "HSID": "AFCrzVkaSTW0t8BDH",
-        "SSID": "AY7bU1zbNnyOT6-XJ",
-        "APISID": "Syfw_KQwYvSIZ7RT/AQSJ89iPhLG_drtjt",
-        "SAPISID": "1yLWPeTBXAXw1b4c/ApzC4WZfpcRIIgkmc",
-        "__Secure-1PAPISID": "1yLWPeTBXAXw1b4c/ApzC4WZfpcRIIgkmc",
-        "__Secure-3PAPISID": "1yLWPeTBXAXw1b4c/ApzC4WZfpcRIIgkmc",
-        "__Secure-BUCKET": "CJgB",
-        "SEARCH_SAMESITE": "CgQIk6AB",
-        "AEC": "AaJma5uw_Jq_Wdmjj8Tf1v3T-kQTa4kR9RgQ4HC4BsDx8Lfy-ddj3VfcGg",
-        "DV": "U0Q-xZsTbixsACJ-bZgLX55dmtPKxplw4P5MyRCtAwIAAGDFgJ1aPE2BvQAAALDxvkO948-MMAAAAHxNtg6drFzxEAAAgEd3PB5P1eMpBAAAAA",
-        "NID": "529=wMqN81nyLfNq3uEIFJoCigdccvxIf9QmjHm4aZA5fzVd3-xgZiT0ZOoPlBufpQIgJm87oqxMODuW23M_T9PPVWJ098HMLI54I6SyMHkGThEnUXMK8LjZ-WNyYYf5ADFXxrMc3DcRreXDsnHSB8flbZF1pfFrA3KdQqe_JqFmSNFqPpmcsA_vObmUNVTWHitwXBvFeLrVLg24_B8EggiJA-jTwgVa1ofOqaXVhvA6kqpZhpviuDU-wmK2eDcxEwq3XUQDEgjicrnw1WSE9-G6k1FTqaeFrU7leHNgq8bBYm8yAhrXdA02D0jVx-_jZnw39nSpTppjbORsvTprmqdtQ2Ck_fVYWqK_OvAZ1nFBXzK5ikF2ATrAj26tlQWaakRxHzC7qeVjbMGoSzQpZszal9r6EbMBa1rhGU3_Rdy2dCcYvSL9",
-        "SIDCC": "AKEyXzX5oIHkaDpJk_UISD9wYXbFz8qgnPtV7QT3_YTrm39nhOqjqb5okMcVY8c4bg2eb1i4Kw",
-        "__Secure-1PSIDCC": "AKEyXzVVocXPBGfE-xwMEwmDaDIyC4Ek7BmBe3TZHSolblk5wWp4o_dSpy2qnjv7MZEwRqpvdA",
-        "__Secure-3PSIDCC": "AKEyXzU_i0ZnVVFD44I5-rv74QaP5ZO8qwBAzRF403-fr79Y50IELwCz44AKSIwWYxtfJPvFlyo",
-        "__Secure-STRP": "AD6DogvFh7iJgaiAZjraKtlwnR966gpAQLn-0CQ4sNNAU7R-K2x3F_8yvoSNXe2FMnqLG9aJmfe1WBJX0gbQlllB3FeRS_MtgBFI"
-    }
+            "SID": "g.a0006QgzClcDNP7pW-T_YmGqp6eM4RFSfEP7vhSD7Cb8YgBgfn_hA0qRDYqQt59KsT4rcfqqigACgYKAbgSARESFQHGX2MiO6wgsORLoTshqWiFxHvsSxoVAUF8yKoaOCKKD_VpNzx3xSFkHfGo0076",
+            "__Secure-1PSID": "g.a0006QgzClcDNP7pW-T_YmGqp6eM4RFSfEP7vhSD7Cb8YgBgfn_hKh1pGleTRJUQpbS31E7MVQACgYKAdYSARESFQHGX2MimiZ9BB9h9e9JAFUVnTY13xoVAUF8yKrAROrx4q5SCMUmKa31TirQ0076",
+            "__Secure-3PSID": "g.a0006QgzClcDNP7pW-T_YmGqp6eM4RFSfEP7vhSD7Cb8YgBgfn_hdfHctwd_WoR1vEuljnnFgwACgYKAWwSARESFQHGX2MirCMVebTbpJGSpt4oc1FHLRoVAUF8yKozH-Tque28j2CiCGgsWkjb0076",
+            "HSID": "AFCrzVkaSTW0t8BDH",
+            "SSID": "AY7bU1zbNnyOT6-XJ",
+            "APISID": "Syfw_KQwYvSIZ7RT/AQSJ89iPhLG_drtjt",
+            "SAPISID": "1yLWPeTBXAXw1b4c/ApzC4WZfpcRIIgkmc",
+            "__Secure-1PAPISID": "1yLWPeTBXAXw1b4c/ApzC4WZfpcRIIgkmc",
+            "__Secure-3PAPISID": "1yLWPeTBXAXw1b4c/ApzC4WZfpcRIIgkmc",
+            "__Secure-BUCKET": "CJgB",
+            "SEARCH_SAMESITE": "CgQIk6AB",
+            "AEC": "AaJma5uw_Jq_Wdmjj8Tf1v3T-kQTa4kR9RgQ4HC4BsDx8Lfy-ddj3VfcGg",
+            "DV": "U0Q-xZsTbixsACJ-bZgLX55dmtPKxplw4P5MyRCtAwIAAGDFgJ1aPE2BvQAAALDxvkO948-MMAAAAHxNtg6drFzxEAAAgEd3PB5P1eMpBAAAAA",
+            "NID": "529=wMqN81nyLfNq3uEIFJoCigdccvxIf9QmjHm4aZA5fzVd3-xgZiT0ZOoPlBufpQIgJm87oqxMODuW23M_T9PPVWJ098HMLI54I6SyMHkGThEnUXMK8LjZ-WNyYYf5ADFXxrMc3DcRreXDsnHSB8flbZF1pfFrA3KdQqe_JqFmSNFqPpmcsA_vObmUNVTWHitwXBvFeLrVLg24_B8EggiJA-jTwgVa1ofOqaXVhvA6kqpZhpviuDU-wmK2eDcxEwq3XUQDEgjicrnw1WSE9-G6k1FTqaeFrU7leHNgq8bBYm8yAhrXdA02D0jVx-_jZnw39nSpTppjbORsvTprmqdtQ2Ck_fVYWqK_OvAZ1nFBXzK5ikF2ATrAj26tlQWaakRxHzC7qeVjbMGoSzQpZszal9r6EbMBa1rhGU3_Rdy2dCcYvSL9",
+            "SIDCC": "AKEyXzX5oIHkaDpJk_UISD9wYXbFz8qgnPtV7QT3_YTrm39nhOqjqb5okMcVY8c4bg2eb1i4Kw",
+            "__Secure-1PSIDCC": "AKEyXzVVocXPBGfE-xwMEwmDaDIyC4Ek7BmBe3TZHSolblk5wWp4o_dSpy2qnjv7MZEwRqpvdA",
+            "__Secure-3PSIDCC": "AKEyXzU_i0ZnVVFD44I5-rv74QaP5ZO8qwBAzRF403-fr79Y50IELwCz44AKSIwWYxtfJPvFlyo",
+            "__Secure-STRP": "AD6DogvFh7iJgaiAZjraKtlwnR966gpAQLn-0CQ4sNNAU7R-K2x3F_8yvoSNXe2FMnqLG9aJmfe1WBJX0gbQlllB3FeRS_MtgBFI"
+        }
+
     def initialize_headers_and_cookies(self):
         self.headers = {
             'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-  'downlink': "0.9",
-  'sec-ch-ua-full-version-list': "\"Chromium\";v=\"140.0.7339.207\", \"Not=A?Brand\";v=\"24.0.0.0\", \"Google Chrome\";v=\"140.0.7339.207\"",
-  'sec-ch-ua-platform': "\"Android\"",
-  'sec-ch-ua': "\"Chromium\";v=\"140\", \"Not=A?Brand\";v=\"24\", \"Google Chrome\";v=\"140\"",
-  'sec-ch-ua-bitness': "\"\"",
-  'sec-ch-ua-model': "\"2510DRA23G\"",
-  'sec-ch-ua-mobile': "?1",
-  'sec-ch-ua-form-factors': "\"Mobile\"",
-  'sec-ch-ua-wow64': "?0",
-  'sec-ch-ua-arch': "\"\"",
-  'sec-ch-ua-full-version': "\"140.0.7339.207\"",
-  'sec-ch-prefers-color-scheme': "dark",
-  'rtt': "100",
-  'sec-ch-ua-platform-version': "\"15.0.0\"",
-  'x-browser-channel': "stable",
-  'x-browser-year': "2025",
-#  'x-browser-validation': "sa/BMelw7zzqFIJ9TfB82t336ew=",
-  'x-browser-copyright': "Copyright 2025 Google LLC. All rights reserved.",
-#  'x-client-data': "CI+2yQEIpLbJAQipncoBCPTfygEIkqHLAQiKoM0BCJWMzwEI0q3PAQ==",
-  'sec-fetch-site': "same-origin",
-  'sec-fetch-mode': "cors",
-  'sec-fetch-dest': "empty",
-  'referer': "https://www.google.com/",
-  'accept-language': "en-US,en;q=0.9",
-  'priority': "u=1, i",}
+            'downlink': "0.9",
+            'sec-ch-ua-full-version-list': "\"Chromium\";v=\"140.0.7339.207\", \"Not=A?Brand\";v=\"24.0.0.0\", \"Google Chrome\";v=\"140.0.7339.207\"",
+            'sec-ch-ua-platform': "\"Android\"",
+            'sec-ch-ua': "\"Chromium\";v=\"140\", \"Not=A?Brand\";v=\"24\", \"Google Chrome\";v=\"140\"",
+            'sec-ch-ua-bitness': "\"\"",
+            'sec-ch-ua-model': "\"2510DRA23G\"",
+            'sec-ch-ua-mobile': "?1",
+            'sec-ch-ua-form-factors': "\"Mobile\"",
+            'sec-ch-ua-wow64': "?0",
+            'sec-ch-ua-arch': "\"\"",
+            'sec-ch-ua-full-version': "\"140.0.7339.207\"",
+            'sec-ch-prefers-color-scheme': "dark",
+            'rtt': "100",
+            'sec-ch-ua-platform-version': "\"15.0.0\"",
+            'x-browser-channel': "stable",
+            'x-browser-year': "2025",
+            'x-browser-copyright': "Copyright 2025 Google LLC. All rights reserved.",
+            'sec-fetch-site': "same-origin",
+            'sec-fetch-mode': "cors",
+            'sec-fetch-dest': "empty",
+            'referer': "https://www.google.com/",
+            'accept-language': "en-US,en;q=0.9",
+            'priority': "u=1, i",
+        }
         
         self.current_cookies = self.get_cookies_from_api()
         self.update_cookie_header()
@@ -91,8 +91,10 @@ class GoogleSearchScraper:
     def parse_google_search_results(self, html_content):
         soup = BeautifulSoup(html_content, 'html.parser')
         results = []
+        seen_urls = set()
 
-        for container in soup.select('div.g, div.MjjYud, div.tF2Cxc, div.rc'):
+        # Main search result containers based on the actual HTML structure
+        for container in soup.select('div.MjjYud, div.g, div[jscontroller="SC7lYd"]'):
             result = {
                 'date': '',
                 'description': '',
@@ -100,31 +102,47 @@ class GoogleSearchScraper:
                 'source': '',
                 'title': '',
                 'type': 'regular',
-                'url': ''
+                'url': '',
+                'position': len(results) + 1
             }
             
-            title = container.select_one('h3')
-            if title:
-                result['title'] = title.get_text(strip=True)
+            # Get title from h3 with class LC20lb
+            title_elem = container.select_one('h3.LC20lb')
+            if title_elem:
+                result['title'] = title_elem.get_text(strip=True)
             
-            link = container.find('a')
+            # Get URL from the main link
+            link = container.find('a', href=True)
             if link and link.get('href'):
                 href = link['href']
                 if href.startswith('/url?q='):
-                    result['url'] = href.split('/url?q=')[1].split('&')[0]
-                    result['url'] = urllib.parse.unquote(result['url'])
-                elif href.startswith('http'):
+                    # Extract URL from Google redirect
+                    url_part = href.split('/url?q=')[1].split('&')[0]
+                    result['url'] = urllib.parse.unquote(url_part)
+                elif href.startswith('http') and not href.startswith('https://www.google.com'):
                     result['url'] = href
             
-            desc = container.select_one('.VwiC3b, .s3v9rd, .aCOpRe')
-            if desc:
-                result['description'] = desc.get_text(strip=True)
+            # Skip if no URL or duplicate
+            if not result['url'] or result['url'] in seen_urls:
+                continue
             
-            source = container.select_one('cite, .iUh30')
-            if source:
-                result['source'] = source.get_text(strip=True)
+            # Get description/snippet
+            desc_elem = container.select_one('div.VwiC3b, div.yXK7lf, span[role="text"]')
+            if desc_elem:
+                result['description'] = desc_elem.get_text(strip=True)
+            
+            # Get source/website name
+            source_elem = container.select_one('cite, div.VuuXrf, span.VuuXrf')
+            if source_elem:
+                result['source'] = source_elem.get_text(strip=True)
+            
+            # Get date if available
+            date_elem = container.select_one('span.f, span.r0bn4c.rQMQod')
+            if date_elem:
+                result['date'] = date_elem.get_text(strip=True)
             
             if self.is_valid_result(result):
+                seen_urls.add(result['url'])
                 results.append(result)
 
         return results
@@ -136,6 +154,14 @@ class GoogleSearchScraper:
             return "https://www.google.com" + next_link.get('href')
         return None
 
+    def get_result_stats(self, html_content):
+        """Extract result statistics from the page"""
+        soup = BeautifulSoup(html_content, 'html.parser')
+        stats = soup.select_one('#result-stats')
+        if stats:
+            return stats.get_text(strip=True)
+        return None
+
     # ========== WEB SEARCH METHODS ==========
     def fetch_page(self, query, start):
         base_url = "https://www.google.com/search"
@@ -145,12 +171,16 @@ class GoogleSearchScraper:
             response = self.session.get(base_url, params=params, headers=self.headers, timeout=15)
             response.raise_for_status()
             results = self.parse_google_search_results(response.text)
+            next_page_url = self.get_next_page_url(response.text)
+            result_stats = self.get_result_stats(response.text)
             
             return {
                 'success': True,
                 'page': (start // 10) + 1,
                 'results': results,
-                'start': start
+                'start': start,
+                'next_page_url': next_page_url,
+                'result_stats': result_stats
             }
         except Exception as e:
             return {
@@ -169,8 +199,10 @@ class GoogleSearchScraper:
             'query': query,
             'results': result.get('results', []),
             'total_results': len(result.get('results', [])),
-            'next_page': True,
-            'next_start': start + 10 if result['success'] else None,
+            'next_page': result.get('next_page_url') is not None,
+            'next_page_url': result.get('next_page_url'),
+            'next_start': start + 10 if result['success'] and result.get('next_page_url') else None,
+            'result_stats': result.get('result_stats'),
             'timestamp': datetime.now().isoformat()
         }
 
@@ -178,6 +210,7 @@ class GoogleSearchScraper:
         all_results = []
         seen_urls = set()
         starts = [(page - 1) * 10 for page in range(start_page, end_page + 1)]
+        page_data = {}
         
         with ThreadPoolExecutor(max_workers=min(5, len(starts))) as executor:
             futures = {executor.submit(self.fetch_page, query, start): start for start in starts}
@@ -185,6 +218,10 @@ class GoogleSearchScraper:
             for future in as_completed(futures):
                 result = future.result()
                 if result['success']:
+                    page_data[result['page']] = {
+                        'result_stats': result.get('result_stats'),
+                        'next_page_url': result.get('next_page_url')
+                    }
                     with self.lock:
                         for item in result['results']:
                             if item.get('url') and item['url'] not in seen_urls:
@@ -197,6 +234,7 @@ class GoogleSearchScraper:
             'pages_scraped': f"{start_page}-{end_page}",
             'total_results': len(all_results),
             'results': all_results,
+            'page_details': page_data,
             'timestamp': datetime.now().isoformat()
         }
 
@@ -204,6 +242,7 @@ class GoogleSearchScraper:
         all_results = []
         seen_urls = set()
         starts = [(page - 1) * 10 for page in range(1, max_pages + 1)]
+        page_data = {}
         
         with ThreadPoolExecutor(max_workers=min(5, max_pages)) as executor:
             futures = {executor.submit(self.fetch_page, query, start): start for start in starts}
@@ -211,6 +250,10 @@ class GoogleSearchScraper:
             for future in as_completed(futures):
                 result = future.result()
                 if result['success']:
+                    page_data[result['page']] = {
+                        'result_stats': result.get('result_stats'),
+                        'next_page_url': result.get('next_page_url')
+                    }
                     with self.lock:
                         for item in result['results']:
                             if item.get('url') and item['url'] not in seen_urls:
@@ -223,6 +266,7 @@ class GoogleSearchScraper:
             'total_pages_scraped': max_pages,
             'total_results': len(all_results),
             'results': all_results,
+            'page_details': page_data,
             'timestamp': datetime.now().isoformat()
         }
 
