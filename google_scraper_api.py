@@ -91,10 +91,13 @@ class GoogleSearchScraper:
     def parse_google_search_results(self, html_content):
         soup = BeautifulSoup(html_content, 'html.parser')
         results = []
-        seen_urls = set()
-
-        # Main search result containers based on the actual HTML structure
-        for container in soup.select('div.MjjYud, div.g, div[jscontroller="SC7lYd"]'):
+        
+        # Based on the HTML structure, results are in div.MjjYud
+        for container in soup.find_all('div', class_='MjjYud'):
+            # Skip if this is an ad or special block
+            if container.find('div', {'data-text-ad': True}) or container.find('div', class_='uEierd'):
+                continue
+                
             result = {
                 'date': '',
                 'description': '',
@@ -102,62 +105,66 @@ class GoogleSearchScraper:
                 'source': '',
                 'title': '',
                 'type': 'regular',
-                'url': '',
-                'position': len(results) + 1
+                'url': ''
             }
             
             # Get title from h3 with class LC20lb
-            title_elem = container.select_one('h3.LC20lb')
+            title_elem = container.find('h3', class_='LC20lb')
+            if not title_elem:
+                title_elem = container.find('h3')
             if title_elem:
                 result['title'] = title_elem.get_text(strip=True)
             
-            # Get URL from the main link
+            # Get URL from the link
             link = container.find('a', href=True)
             if link and link.get('href'):
                 href = link['href']
                 if href.startswith('/url?q='):
-                    # Extract URL from Google redirect
                     url_part = href.split('/url?q=')[1].split('&')[0]
                     result['url'] = urllib.parse.unquote(url_part)
-                elif href.startswith('http') and not href.startswith('https://www.google.com'):
+                elif href.startswith('http'):
                     result['url'] = href
             
-            # Skip if no URL or duplicate
-            if not result['url'] or result['url'] in seen_urls:
-                continue
-            
-            # Get description/snippet
-            desc_elem = container.select_one('div.VwiC3b, div.yXK7lf, span[role="text"]')
+            # Get description/snippet from div.VwiC3b
+            desc_elem = container.find('div', class_='VwiC3b')
+            if not desc_elem:
+                desc_elem = container.find('div', class_='yXK7lf')
             if desc_elem:
                 result['description'] = desc_elem.get_text(strip=True)
             
-            # Get source/website name
-            source_elem = container.select_one('cite, div.VuuXrf, span.VuuXrf')
+            # Get source/website from cite
+            source_elem = container.find('cite')
+            if not source_elem:
+                source_elem = container.find('div', class_='VuuXrf')
+            if not source_elem:
+                source_elem = container.find('span', class_='VuuXrf')
             if source_elem:
-                result['source'] = source_elem.get_text(strip=True)
+                source_text = source_elem.get_text(strip=True)
+                # Clean up source text
+                source_text = re.sub(r'[››]', '', source_text).strip()
+                source_text = re.sub(r'\s+', ' ', source_text)
+                result['source'] = source_text
             
             # Get date if available
-            date_elem = container.select_one('span.f, span.r0bn4c.rQMQod')
+            date_elem = container.find('span', class_='f')
             if date_elem:
                 result['date'] = date_elem.get_text(strip=True)
             
             if self.is_valid_result(result):
-                seen_urls.add(result['url'])
                 results.append(result)
-
+        
         return results
 
     def get_next_page_url(self, html_content):
         soup = BeautifulSoup(html_content, 'html.parser')
-        next_link = soup.select_one('a#pnnext')
+        next_link = soup.find('a', id='pnnext')
         if next_link and next_link.get('href'):
             return "https://www.google.com" + next_link.get('href')
         return None
 
     def get_result_stats(self, html_content):
-        """Extract result statistics from the page"""
         soup = BeautifulSoup(html_content, 'html.parser')
-        stats = soup.select_one('#result-stats')
+        stats = soup.find('div', id='result-stats')
         if stats:
             return stats.get_text(strip=True)
         return None
@@ -165,7 +172,12 @@ class GoogleSearchScraper:
     # ========== WEB SEARCH METHODS ==========
     def fetch_page(self, query, start):
         base_url = "https://www.google.com/search"
-        params = {'q': query, 'hl': 'en', 'start': start}
+        params = {
+            'q': query, 
+            'hl': 'en', 
+            'start': start,
+            'num': '100'  # Request maximum results
+        }
         
         try:
             response = self.session.get(base_url, params=params, headers=self.headers, timeout=15)
@@ -208,7 +220,6 @@ class GoogleSearchScraper:
 
     def search_pages_range_threaded(self, query, start_page=1, end_page=3):
         all_results = []
-        seen_urls = set()
         starts = [(page - 1) * 10 for page in range(start_page, end_page + 1)]
         page_data = {}
         
@@ -223,10 +234,7 @@ class GoogleSearchScraper:
                         'next_page_url': result.get('next_page_url')
                     }
                     with self.lock:
-                        for item in result['results']:
-                            if item.get('url') and item['url'] not in seen_urls:
-                                seen_urls.add(item['url'])
-                                all_results.append(item)
+                        all_results.extend(result['results'])
         
         return {
             'success': True,
@@ -240,7 +248,6 @@ class GoogleSearchScraper:
 
     def search_all_pages_threaded(self, query, max_pages=10):
         all_results = []
-        seen_urls = set()
         starts = [(page - 1) * 10 for page in range(1, max_pages + 1)]
         page_data = {}
         
@@ -255,10 +262,7 @@ class GoogleSearchScraper:
                         'next_page_url': result.get('next_page_url')
                     }
                     with self.lock:
-                        for item in result['results']:
-                            if item.get('url') and item['url'] not in seen_urls:
-                                seen_urls.add(item['url'])
-                                all_results.append(item)
+                        all_results.extend(result['results'])
         
         return {
             'success': True,
