@@ -23,7 +23,7 @@ def json_response(data, status=200):
         mimetype='application/json'
     )
 
-class GoogleSearchScraper:
+class ComprehensiveGoogleScraper:
     def __init__(self):
         # Optimized session with connection pooling
         self.session = requests.Session()
@@ -42,7 +42,7 @@ class GoogleSearchScraper:
         
         # Global deduplication tracking across all scraping sessions
         self.global_seen_urls = set()
-        self.global_seen_hashes = set()  # Track content hashes
+        self.global_seen_hashes = set()
 
     def get_cookies_from_api(self):
         return {
@@ -76,205 +76,467 @@ class GoogleSearchScraper:
         self.session.cookies.update(self.current_cookies)
 
     def normalize_url(self, url):
-        """
-        Normalize URL to catch duplicates with different query parameters or trailing slashes
-        """
+        """Normalize URL to catch duplicates"""
         if not url:
             return None
         
-        # Remove common tracking parameters
         tracking_params = ['utm_source', 'utm_medium', 'utm_campaign', 'utm_content', 'utm_term', 
                           'fbclid', 'gclid', 'ref', 'source']
         
         try:
             parsed = urllib.parse.urlparse(url)
-            
-            # Parse query parameters
             params = urllib.parse.parse_qs(parsed.query)
-            
-            # Remove tracking parameters
             filtered_params = {k: v for k, v in params.items() if k not in tracking_params}
-            
-            # Rebuild query string
             new_query = urllib.parse.urlencode(filtered_params, doseq=True)
             
-            # Normalize the URL
             normalized = urllib.parse.urlunparse((
                 parsed.scheme.lower(),
                 parsed.netloc.lower(),
-                parsed.path.rstrip('/'),  # Remove trailing slash
+                parsed.path.rstrip('/'),
                 parsed.params,
                 new_query,
-                ''  # Remove fragment
+                ''
             ))
             
             return normalized
         except:
             return url
 
-    def get_content_hash(self, result):
-        """
-        Generate a hash from title and description to catch near-duplicates
-        """
-        content = f"{result.get('title', '').lower().strip()}|{result.get('description', '').lower().strip()}"
+    def get_content_hash(self, title, description):
+        """Generate hash from content"""
+        content = f"{title.lower().strip()}|{description.lower().strip()}"
         return hashlib.md5(content.encode()).hexdigest()
 
-    def is_valid_result(self, result):
-        """Enhanced validation with more filters"""
-        if not result.get('url'):
-            return False
-        
-        # Filter out Google's own services and ads
-        blocked_domains = [
-            'google.com/ackl',
-            'googleadservices',
-            'google.com/aclk',
-            'google.com/url',
-            'accounts.google.com',
-            'support.google.com/websearch'
-        ]
-        
-        for domain in blocked_domains:
-            if domain in result['url']:
-                return False
-        
-        # Title validation
-        if not result.get('title') or len(result['title']) < 3:
-            return False
-        
-        # Filter out results with generic/spam titles
-        spam_indicators = ['...', '›', '»', '|' * 3]
-        title = result['title']
-        if any(indicator in title for indicator in spam_indicators):
-            if len(title) < 20:  # Only filter short titles with these
-                return False
-        
-        return True
+    def extract_url_from_href(self, href):
+        """Extract actual URL from Google's various formats"""
+        if not href:
+            return None
+            
+        if href.startswith('/url?q='):
+            try:
+                url = href.split('/url?q=')[1].split('&')[0]
+                return urllib.parse.unquote(url)
+            except:
+                return None
+        elif href.startswith('http'):
+            return href
+        elif href.startswith('/search'):  # Internal Google search link
+            return None
+        else:
+            return None
 
-    def parse_google_search_results(self, html_content, local_seen_urls=None, local_seen_hashes=None):
+    def scrape_everything_from_page(self, html_content, local_seen_urls=None, local_seen_hashes=None):
         """
-        Enhanced parsing with better duplicate detection
+        COMPREHENSIVE SCRAPER - Collects EVERYTHING from the page:
+        - Organic results
+        - Featured snippets
+        - Knowledge panels
+        - People also ask
+        - Related searches
+        - News results
+        - Video results
+        - Image results
+        - Shopping results
+        - Local results
+        - Ads (if present)
         """
         soup = BeautifulSoup(html_content, 'html.parser')
-        results = []
         
-        # Use provided sets or create new ones
         if local_seen_urls is None:
             local_seen_urls = set()
         if local_seen_hashes is None:
             local_seen_hashes = set()
+        
+        page_data = {
+            'organic_results': [],
+            'featured_snippet': None,
+            'knowledge_panel': None,
+            'people_also_ask': [],
+            'related_searches': [],
+            'news_results': [],
+            'video_results': [],
+            'image_results': [],
+            'shopping_results': [],
+            'local_results': [],
+            'ads': [],
+            'pagination': {},
+            'metadata': {}
+        }
 
-        # Multiple selector strategies based on actual Google HTML structure
-        # Priority order: newest to oldest class names
-        containers = (
-            soup.select('div.MjjYud') or  # Current structure
-            soup.select('div.Gx5Zad.fP1Qef.xpd.EtOod.pkphOe') or  # Alternative
-            soup.select('div.tF2Cxc') or  # Older structure
-            soup.select('div.g') or  # Even older
-            soup.select('div.rc')  # Fallback
+        # ========== 1. ORGANIC SEARCH RESULTS ==========
+        organic_containers = (
+            soup.select('div.MjjYud') or
+            soup.select('div.Gx5Zad.fP1Qef.xpd.EtOod.pkphOe') or
+            soup.select('div.tF2Cxc') or
+            soup.select('div.g:not(.g-blk)') or
+            soup.select('div.rc')
         )
         
-        for container in containers:
-            result = {
-                'date': '',
-                'description': '',
-                'snippet': '',
-                'source': '',
-                'title': '',
-                'type': 'regular',
-                'url': '',
-                'normalized_url': ''
+        for container in organic_containers:
+            result = self._extract_organic_result(container, local_seen_urls, local_seen_hashes)
+            if result:
+                page_data['organic_results'].append(result)
+
+        # ========== 2. FEATURED SNIPPET ==========
+        featured_snippet = soup.select_one('.xpdopen, .kp-blk, .IZ6rdc')
+        if featured_snippet:
+            page_data['featured_snippet'] = self._extract_featured_snippet(featured_snippet)
+
+        # ========== 3. KNOWLEDGE PANEL ==========
+        knowledge_panel = soup.select_one('.kp-wholepage, .knowledge-panel, .osrp-blk')
+        if knowledge_panel:
+            page_data['knowledge_panel'] = self._extract_knowledge_panel(knowledge_panel)
+
+        # ========== 4. PEOPLE ALSO ASK ==========
+        paa_section = soup.select('.related-question-pair, .kno-ftr, div[jsname="yEVEwb"]')
+        for question in paa_section:
+            paa_item = self._extract_people_also_ask(question)
+            if paa_item:
+                page_data['people_also_ask'].append(paa_item)
+
+        # ========== 5. RELATED SEARCHES ==========
+        related_searches = soup.select('.k8XOCe, .s75CSd, .AJLUJb')
+        for related in related_searches:
+            search_text = related.get_text(strip=True)
+            search_link = related.find('a')
+            if search_text and search_link:
+                page_data['related_searches'].append({
+                    'text': search_text,
+                    'url': 'https://www.google.com' + search_link.get('href', '')
+                })
+
+        # ========== 6. NEWS RESULTS ==========
+        news_blocks = soup.select('.WlydOe, .SoaBEf, .nChh6e')
+        for news in news_blocks:
+            news_item = self._extract_news_result(news)
+            if news_item:
+                page_data['news_results'].append(news_item)
+
+        # ========== 7. VIDEO RESULTS ==========
+        video_blocks = soup.select('.RzdJxc, .VibNM, .dFd0Ac')
+        for video in video_blocks:
+            video_item = self._extract_video_result(video)
+            if video_item:
+                page_data['video_results'].append(video_item)
+
+        # ========== 8. IMAGE RESULTS (if embedded) ==========
+        image_blocks = soup.select('.ivg-i, .isv-r')
+        for img in image_blocks[:10]:  # Limit to first 10
+            image_item = self._extract_image_result(img)
+            if image_item:
+                page_data['image_results'].append(image_item)
+
+        # ========== 9. SHOPPING RESULTS ==========
+        shopping_blocks = soup.select('.sh-dgr__content, .pla-unit')
+        for shop in shopping_blocks:
+            shop_item = self._extract_shopping_result(shop)
+            if shop_item:
+                page_data['shopping_results'].append(shop_item)
+
+        # ========== 10. LOCAL RESULTS (Maps) ==========
+        local_blocks = soup.select('.rllt__details, .VkpGBb')
+        for local in local_blocks:
+            local_item = self._extract_local_result(local)
+            if local_item:
+                page_data['local_results'].append(local_item)
+
+        # ========== 11. ADS (Top & Bottom) ==========
+        ad_blocks = soup.select('.uEierd, .v5yQqb, div[data-text-ad]')
+        for ad in ad_blocks:
+            ad_item = self._extract_ad_result(ad)
+            if ad_item:
+                page_data['ads'].append(ad_item)
+
+        # ========== 12. PAGINATION INFO ==========
+        page_data['pagination'] = self._extract_pagination(soup)
+
+        # ========== 13. METADATA ==========
+        page_data['metadata'] = {
+            'result_stats': self._extract_result_stats(soup),
+            'search_time': self._extract_search_time(soup),
+            'timestamp': datetime.now().isoformat()
+        }
+
+        # ========== SUMMARY ==========
+        page_data['summary'] = {
+            'total_organic': len(page_data['organic_results']),
+            'total_paa': len(page_data['people_also_ask']),
+            'total_related': len(page_data['related_searches']),
+            'total_news': len(page_data['news_results']),
+            'total_videos': len(page_data['video_results']),
+            'total_images': len(page_data['image_results']),
+            'total_shopping': len(page_data['shopping_results']),
+            'total_local': len(page_data['local_results']),
+            'total_ads': len(page_data['ads']),
+            'has_featured_snippet': page_data['featured_snippet'] is not None,
+            'has_knowledge_panel': page_data['knowledge_panel'] is not None,
+            'total_items': (
+                len(page_data['organic_results']) +
+                len(page_data['people_also_ask']) +
+                len(page_data['news_results']) +
+                len(page_data['video_results']) +
+                len(page_data['ads'])
+            )
+        }
+
+        return page_data
+
+    # ========== EXTRACTION METHODS ==========
+    
+    def _extract_organic_result(self, container, seen_urls, seen_hashes):
+        """Extract organic search result"""
+        result = {
+            'type': 'organic',
+            'title': '',
+            'url': '',
+            'normalized_url': '',
+            'description': '',
+            'source': '',
+            'date': '',
+            'rich_snippet': {}
+        }
+        
+        # Title
+        title_elem = (
+            container.select_one('h3') or
+            container.select_one('h3.LC20lb') or
+            container.select_one('.DKV0Md')
+        )
+        if title_elem:
+            result['title'] = title_elem.get_text(strip=True)
+        
+        # URL
+        link = container.find('a', href=True)
+        if link:
+            url = self.extract_url_from_href(link['href'])
+            if url:
+                result['url'] = url
+                result['normalized_url'] = self.normalize_url(url)
+        
+        # Description
+        desc_elem = (
+            container.select_one('.VwiC3b') or
+            container.select_one('.s3v9rd') or
+            container.select_one('.aCOpRe') or
+            container.select_one('.yDYNvb') or
+            container.select_one('.IsZvec') or
+            container.select_one('span')
+        )
+        if desc_elem:
+            result['description'] = desc_elem.get_text(strip=True)
+        
+        # Source/Domain
+        cite_elem = (
+            container.select_one('cite') or
+            container.select_one('.iUh30') or
+            container.select_one('.tjvcx') or
+            container.select_one('.qLRx3b')
+        )
+        if cite_elem:
+            result['source'] = cite_elem.get_text(strip=True)
+        
+        # Date
+        date_elem = container.select_one('.LEwnzc.Sqrs4e, .MUxGbd')
+        if date_elem:
+            result['date'] = date_elem.get_text(strip=True)
+        
+        # Rich Snippet (ratings, price, etc.)
+        rating = container.select_one('.fG8Fp, .z3HNkc')
+        if rating:
+            result['rich_snippet']['rating'] = rating.get_text(strip=True)
+        
+        # Check for duplicates
+        if not result['url'] or not result['title']:
+            return None
+            
+        normalized_url = result['normalized_url']
+        content_hash = self.get_content_hash(result['title'], result['description'])
+        
+        if normalized_url in seen_urls or content_hash in seen_hashes:
+            return None
+        
+        seen_urls.add(normalized_url)
+        seen_hashes.add(content_hash)
+        
+        with self.lock:
+            self.global_seen_urls.add(normalized_url)
+            self.global_seen_hashes.add(content_hash)
+        
+        return result
+
+    def _extract_featured_snippet(self, container):
+        """Extract featured snippet"""
+        return {
+            'type': 'featured_snippet',
+            'title': container.select_one('h3, .LrzXr').get_text(strip=True) if container.select_one('h3, .LrzXr') else '',
+            'content': container.get_text(strip=True)[:500],
+            'url': self.extract_url_from_href(container.find('a')['href']) if container.find('a') else ''
+        }
+
+    def _extract_knowledge_panel(self, container):
+        """Extract knowledge panel"""
+        return {
+            'type': 'knowledge_panel',
+            'title': container.select_one('h2, .qrShPb').get_text(strip=True) if container.select_one('h2, .qrShPb') else '',
+            'description': container.select_one('.kno-rdesc, .LWkfKe').get_text(strip=True) if container.select_one('.kno-rdesc, .LWkfKe') else '',
+            'image_url': container.find('img')['src'] if container.find('img') else None,
+            'facts': [elem.get_text(strip=True) for elem in container.select('.w8qArf, .kno-fv')][:10]
+        }
+
+    def _extract_people_also_ask(self, container):
+        """Extract people also ask question"""
+        question = container.select_one('.LC20lb, .JlqpRe')
+        if question:
+            return {
+                'type': 'people_also_ask',
+                'question': question.get_text(strip=True),
+                'answer': container.get_text(strip=True)[:300]
             }
-            
-            # Extract title - try multiple selectors
-            title_elem = (
-                container.select_one('h3') or
-                container.select_one('h3.LC20lb') or
-                container.select_one('.DKV0Md')
-            )
-            if title_elem:
-                result['title'] = title_elem.get_text(strip=True)
-            
-            # Extract link - handle multiple formats
-            link = container.find('a', href=True)
-            if link and link.get('href'):
-                href = link['href']
-                
-                # Handle different URL formats from Google
-                if href.startswith('/url?q='):
-                    # Extract actual URL from Google redirect
-                    try:
-                        result['url'] = href.split('/url?q=')[1].split('&')[0]
-                        result['url'] = urllib.parse.unquote(result['url'])
-                    except:
-                        continue
-                elif href.startswith('http'):
-                    result['url'] = href
-                else:
-                    # Skip relative URLs or invalid formats
-                    continue
-                
-                # Normalize URL for duplicate detection
-                result['normalized_url'] = self.normalize_url(result['url'])
-            
-            # Extract description/snippet - try multiple selectors
-            desc_elem = (
-                container.select_one('.VwiC3b') or  # Current
-                container.select_one('.s3v9rd') or  # Alternative
-                container.select_one('.aCOpRe') or
-                container.select_one('.yDYNvb') or
-                container.select_one('.IsZvec')  # Older
-            )
-            if desc_elem:
-                result['description'] = desc_elem.get_text(strip=True)
-                result['snippet'] = result['description']  # Alias
-            
-            # Extract source/cite
-            source_elem = (
-                container.select_one('cite') or
-                container.select_one('.iUh30') or
-                container.select_one('.tjvcx') or
-                container.select_one('.qLRx3b')
-            )
-            if source_elem:
-                result['source'] = source_elem.get_text(strip=True)
-            
-            # Extract date if present
-            date_elem = container.select_one('.LEwnzc.Sqrs4e')
-            if date_elem:
-                result['date'] = date_elem.get_text(strip=True)
-            
-            # Validate result
-            if not self.is_valid_result(result):
-                continue
-            
-            # Check for duplicates using normalized URL
-            normalized_url = result['normalized_url']
-            if normalized_url in local_seen_urls or normalized_url in self.global_seen_urls:
-                continue
-            
-            # Check for near-duplicates using content hash
-            content_hash = self.get_content_hash(result)
-            if content_hash in local_seen_hashes or content_hash in self.global_seen_hashes:
-                continue
-            
-            # Add to seen sets
-            local_seen_urls.add(normalized_url)
-            local_seen_hashes.add(content_hash)
-            
-            with self.lock:
-                self.global_seen_urls.add(normalized_url)
-                self.global_seen_hashes.add(content_hash)
-            
-            results.append(result)
+        return None
 
-        return results
+    def _extract_news_result(self, container):
+        """Extract news result"""
+        title = container.select_one('.mCBkyc, .n0jPhd')
+        link = container.find('a')
+        if title and link:
+            return {
+                'type': 'news',
+                'title': title.get_text(strip=True),
+                'url': self.extract_url_from_href(link['href']),
+                'source': container.select_one('.CEMjEf, .WF4CUc').get_text(strip=True) if container.select_one('.CEMjEf, .WF4CUc') else '',
+                'date': container.select_one('.ZE0LJd, .OSrXXb').get_text(strip=True) if container.select_one('.ZE0LJd, .OSrXXb') else ''
+            }
+        return None
 
-    def get_next_page_url(self, html_content):
-        soup = BeautifulSoup(html_content, 'html.parser')
+    def _extract_video_result(self, container):
+        """Extract video result"""
+        title = container.select_one('h3, .DhN8Cf')
+        link = container.find('a')
+        if title and link:
+            return {
+                'type': 'video',
+                'title': title.get_text(strip=True),
+                'url': self.extract_url_from_href(link['href']),
+                'thumbnail': container.find('img')['src'] if container.find('img') else None,
+                'duration': container.select_one('.J1mWY, .P7xzyf').get_text(strip=True) if container.select_one('.J1mWY, .P7xzyf') else '',
+                'source': container.select_one('.Zg1NU, .fYyStc').get_text(strip=True) if container.select_one('.Zg1NU, .fYyStc') else ''
+            }
+        return None
+
+    def _extract_image_result(self, container):
+        """Extract image result"""
+        img = container.find('img')
+        link = container.find('a')
+        if img and link:
+            return {
+                'type': 'image',
+                'thumbnail_url': img.get('src', img.get('data-src', '')),
+                'link_url': self.extract_url_from_href(link['href']),
+                'title': img.get('alt', '')
+            }
+        return None
+
+    def _extract_shopping_result(self, container):
+        """Extract shopping result"""
+        title = container.select_one('.Xjkr3b, .tAxDx')
+        price = container.select_one('.a8Pemb, .e10twf')
+        if title:
+            return {
+                'type': 'shopping',
+                'title': title.get_text(strip=True),
+                'price': price.get_text(strip=True) if price else '',
+                'merchant': container.select_one('.IuHnof, .aULzUe').get_text(strip=True) if container.select_one('.IuHnof, .aULzUe') else '',
+                'image': container.find('img')['src'] if container.find('img') else None
+            }
+        return None
+
+    def _extract_local_result(self, container):
+        """Extract local/map result"""
+        name = container.select_one('.OSrXXb, .dbg0pd')
+        if name:
+            return {
+                'type': 'local',
+                'name': name.get_text(strip=True),
+                'address': container.select_one('.rllt__details div').get_text(strip=True) if container.select_one('.rllt__details div') else '',
+                'rating': container.select_one('.BTtC6e, .yi40Hd').get_text(strip=True) if container.select_one('.BTtC6e, .yi40Hd') else '',
+                'hours': container.select_one('.aiRlze, .MGDDX').get_text(strip=True) if container.select_one('.aiRlze, .MGDDX') else ''
+            }
+        return None
+
+    def _extract_ad_result(self, container):
+        """Extract ad"""
+        title = container.select_one('div[role="heading"], .v5yQqb')
+        link = container.find('a')
+        if title and link:
+            return {
+                'type': 'ad',
+                'title': title.get_text(strip=True),
+                'url': self.extract_url_from_href(link['href']),
+                'description': container.get_text(strip=True)[:200],
+                'position': 'top' if container.find_parent('.commercial-unit-desktop-top') else 'bottom'
+            }
+        return None
+
+    def _extract_pagination(self, soup):
+        """Extract pagination information"""
+        pagination = {
+            'current_page': 1,
+            'has_next': False,
+            'has_previous': False,
+            'next_url': None,
+            'previous_url': None,
+            'pages': []
+        }
+        
+        # Current page
+        current = soup.select_one('.YyVfkd')
+        if current:
+            try:
+                pagination['current_page'] = int(current.get_text(strip=True))
+            except:
+                pass
+        
+        # Next page
         next_link = soup.select_one('a#pnnext')
         if next_link and next_link.get('href'):
-            return "https://www.google.com" + next_link.get('href')
+            pagination['has_next'] = True
+            pagination['next_url'] = 'https://www.google.com' + next_link['href']
+        
+        # Previous page
+        prev_link = soup.select_one('a#pnprev')
+        if prev_link and prev_link.get('href'):
+            pagination['has_previous'] = True
+            pagination['previous_url'] = 'https://www.google.com' + prev_link['href']
+        
+        # All page numbers
+        page_links = soup.select('.AaVjTc td a, .fl')
+        for link in page_links:
+            try:
+                page_num = int(link.get_text(strip=True))
+                pagination['pages'].append({
+                    'page': page_num,
+                    'url': 'https://www.google.com' + link['href']
+                })
+            except:
+                pass
+        
+        return pagination
+
+    def _extract_result_stats(self, soup):
+        """Extract result statistics"""
+        stats = soup.select_one('#result-stats')
+        if stats:
+            return stats.get_text(strip=True)
+        return ''
+
+    def _extract_search_time(self, soup):
+        """Extract search time"""
+        stats = soup.select_one('#result-stats')
+        if stats:
+            text = stats.get_text()
+            match = re.search(r'\(([\d.]+) seconds\)', text)
+            if match:
+                return float(match.group(1))
         return None
 
     def clear_global_cache(self):
@@ -283,154 +545,161 @@ class GoogleSearchScraper:
             self.global_seen_urls.clear()
             self.global_seen_hashes.clear()
 
-    # ========== WEB SEARCH METHODS ==========
-    def fetch_page(self, query, start, local_seen_urls=None, local_seen_hashes=None):
+    # ========== API METHODS ==========
+    
+    def fetch_complete_page(self, query, start=0):
+        """Fetch and parse everything from a single page"""
         base_url = "https://www.google.com/search"
         params = {'q': query, 'hl': 'en', 'start': start}
         
         try:
-            response = self.session.get(base_url, params=params, headers=self.headers, timeout=10)
+            response = self.session.get(base_url, params=params, headers=self.headers, timeout=15)
             response.raise_for_status()
-            results = self.parse_google_search_results(
-                response.text, 
-                local_seen_urls, 
+            
+            local_seen_urls = set()
+            local_seen_hashes = set()
+            
+            page_data = self.scrape_everything_from_page(
+                response.text,
+                local_seen_urls,
                 local_seen_hashes
             )
             
             return {
                 'success': True,
+                'query': query,
                 'page': (start // 10) + 1,
-                'results': results,
-                'start': start
+                'start': start,
+                'data': page_data,
+                'timestamp': datetime.now().isoformat()
             }
+            
         except Exception as e:
             return {
                 'success': False,
-                'page': (start // 10) + 1,
+                'query': query,
                 'error': str(e),
-                'start': start
+                'page': (start // 10) + 1
             }
 
-    def search_single_page(self, query, start=0):
-        # Use local sets for this request
-        local_seen_urls = set()
-        local_seen_hashes = set()
-        
-        result = self.fetch_page(query, start, local_seen_urls, local_seen_hashes)
-        
-        return {
-            'success': result['success'],
-            'page': result['page'],
-            'query': query,
-            'results': result.get('results', []),
-            'total_results': len(result.get('results', [])),
-            'unique_results': len(result.get('results', [])),
-            'next_page': True,
-            'next_start': start + 10 if result['success'] else None,
-            'timestamp': datetime.now().isoformat()
+    def fetch_custom_range(self, query, start_page=1, end_page=3):
+        """Fetch multiple pages with full control"""
+        all_data = {
+            'organic_results': [],
+            'featured_snippets': [],
+            'knowledge_panels': [],
+            'people_also_ask': [],
+            'related_searches': [],
+            'news_results': [],
+            'video_results': [],
+            'image_results': [],
+            'shopping_results': [],
+            'local_results': [],
+            'ads': []
         }
-
-    def search_pages_range_threaded(self, query, start_page=1, end_page=3):
-        all_results = []
+        
         seen_urls = set()
         seen_hashes = set()
-        starts = [(page - 1) * 10 for page in range(start_page, end_page + 1)]
         
-        # Increased max_workers for faster parallel execution
-        with ThreadPoolExecutor(max_workers=min(10, len(starts))) as executor:
-            futures = {
-                executor.submit(self.fetch_page, query, start, seen_urls, seen_hashes): start 
-                for start in starts
-            }
+        pages_collected = []
+        
+        for page in range(start_page, end_page + 1):
+            start = (page - 1) * 10
+            result = self.fetch_complete_page(query, start)
             
-            for future in as_completed(futures):
-                result = future.result()
-                if result['success']:
-                    with self.lock:
-                        for item in result['results']:
-                            # Double-check in case of race conditions
-                            norm_url = item.get('normalized_url', item.get('url'))
-                            if norm_url not in seen_urls:
-                                seen_urls.add(norm_url)
-                                all_results.append(item)
+            if result['success']:
+                pages_collected.append(page)
+                data = result['data']
+                
+                # Aggregate all results
+                for item in data['organic_results']:
+                    if item['normalized_url'] not in seen_urls:
+                        seen_urls.add(item['normalized_url'])
+                        all_data['organic_results'].append(item)
+                
+                if data['featured_snippet'] and data['featured_snippet'] not in all_data['featured_snippets']:
+                    all_data['featured_snippets'].append(data['featured_snippet'])
+                
+                if data['knowledge_panel'] and data['knowledge_panel'] not in all_data['knowledge_panels']:
+                    all_data['knowledge_panels'].append(data['knowledge_panel'])
+                
+                all_data['people_also_ask'].extend(data['people_also_ask'])
+                all_data['related_searches'].extend(data['related_searches'])
+                all_data['news_results'].extend(data['news_results'])
+                all_data['video_results'].extend(data['video_results'])
+                all_data['image_results'].extend(data['image_results'])
+                all_data['shopping_results'].extend(data['shopping_results'])
+                all_data['local_results'].extend(data['local_results'])
+                all_data['ads'].extend(data['ads'])
         
         return {
             'success': True,
             'query': query,
-            'pages_scraped': f"{start_page}-{end_page}",
-            'total_results': len(all_results),
-            'unique_results': len(all_results),
-            'results': all_results,
-            'timestamp': datetime.now().isoformat()
-        }
-
-    def search_all_pages_threaded(self, query, max_pages=10):
-        all_results = []
-        seen_urls = set()
-        seen_hashes = set()
-        starts = [(page - 1) * 10 for page in range(1, max_pages + 1)]
-        
-        # Increased max_workers for faster parallel execution
-        with ThreadPoolExecutor(max_workers=min(10, len(starts))) as executor:
-            futures = {
-                executor.submit(self.fetch_page, query, start, seen_urls, seen_hashes): start 
-                for start in starts
-            }
-            
-            for future in as_completed(futures):
-                result = future.result()
-                if result['success']:
-                    with self.lock:
-                        for item in result['results']:
-                            # Double-check in case of race conditions
-                            norm_url = item.get('normalized_url', item.get('url'))
-                            if norm_url not in seen_urls:
-                                seen_urls.add(norm_url)
-                                all_results.append(item)
-        
-        return {
-            'success': True,
-            'query': query,
-            'total_pages': max_pages,
-            'total_results': len(all_results),
-            'unique_results': len(all_results),
-            'results': all_results,
+            'pages_collected': pages_collected,
+            'page_range': f'{start_page}-{end_page}',
+            'data': all_data,
+            'summary': {
+                'total_organic': len(all_data['organic_results']),
+                'total_paa': len(all_data['people_also_ask']),
+                'total_related': len(all_data['related_searches']),
+                'total_news': len(all_data['news_results']),
+                'total_videos': len(all_data['video_results']),
+                'total_images': len(all_data['image_results']),
+                'total_shopping': len(all_data['shopping_results']),
+                'total_local': len(all_data['local_results']),
+                'total_ads': len(all_data['ads']),
+                'total_items': (
+                    len(all_data['organic_results']) +
+                    len(all_data['people_also_ask']) +
+                    len(all_data['news_results']) +
+                    len(all_data['video_results']) +
+                    len(all_data['ads'])
+                )
+            },
             'timestamp': datetime.now().isoformat()
         }
 
 
-scraper = GoogleSearchScraper()
+scraper = ComprehensiveGoogleScraper()
 
 
 @app.route('/')
 def home():
     return json_response({
-        'status': 'Google Search Scraper API - ENHANCED DEDUPLICATION',
-        'version': '2.0',
+        'status': 'Comprehensive Google Scraper - COLLECT EVERYTHING',
+        'version': '3.0',
+        'description': 'Scrapes ALL content types from Google search pages. You control pagination.',
         'endpoints': {
-            '/search': 'GET - Search single page (params: q, page)',
-            '/search/range/threaded': 'GET - Search page range with threading (params: q, start_page, end_page)',
-            '/search/all/threaded': 'GET - Search all pages with threading (params: q, max_pages)',
+            '/scrape/page': 'GET - Scrape EVERYTHING from a single page (params: q, page)',
+            '/scrape/range': 'GET - Scrape multiple pages (params: q, start_page, end_page)',
             '/clear_cache': 'POST - Clear global deduplication cache'
         },
+        'collected_content': [
+            'Organic search results',
+            'Featured snippets',
+            'Knowledge panels',
+            'People also ask',
+            'Related searches',
+            'News results',
+            'Video results',
+            'Image results (embedded)',
+            'Shopping results',
+            'Local/Map results',
+            'Ads (top & bottom)',
+            'Pagination metadata',
+            'Search statistics'
+        ],
         'examples': {
-            'single_page': '/search?q=python&page=1',
-            'range_fast': '/search/range/threaded?q=python&start_page=1&end_page=3',
-            'all_fast': '/search/all/threaded?q=python&max_pages=5',
-        },
-        'features': [
-            'URL normalization (removes tracking params)',
-            'Content-based deduplication (title + description hashing)',
-            'Global cross-request deduplication',
-            'Thread-safe duplicate prevention',
-            'Enhanced spam filtering'
-        ]
+            'single_page': '/scrape/page?q=python&page=1',
+            'custom_range': '/scrape/range?q=python&start_page=1&end_page=5',
+            'specific_page': '/scrape/page?q=hostinger&page=3'
+        }
     })
 
 
-# ========== WEB SEARCH ROUTES ==========
-@app.route('/search', methods=['GET'])
-def search():
+@app.route('/scrape/page', methods=['GET'])
+def scrape_single_page():
+    """Scrape EVERYTHING from a single page"""
     query = request.args.get('q', '').strip()
     page = int(request.args.get('page', 1))
     
@@ -441,39 +710,28 @@ def search():
         return json_response({'error': 'Page must be >= 1'}, 400)
     
     start = (page - 1) * 10
-    result = scraper.search_single_page(query, start)
+    result = scraper.fetch_complete_page(query, start)
     
     return json_response(result)
 
 
-@app.route('/search/range/threaded', methods=['GET'])
-def search_range_threaded():
+@app.route('/scrape/range', methods=['GET'])
+def scrape_page_range():
+    """Scrape multiple pages - YOU control pagination"""
     query = request.args.get('q', '').strip()
     start_page = int(request.args.get('start_page', 1))
-    end_page = int(request.args.get('end_page', 3))
+    end_page = int(request.args.get('end_page', 1))
     
     if not query:
         return json_response({'error': 'Missing query parameter (q)'}, 400)
     
-    if start_page < 1 or end_page < start_page or end_page > 50:
+    if start_page < 1 or end_page < start_page:
         return json_response({'error': 'Invalid page range'}, 400)
     
-    result = scraper.search_pages_range_threaded(query, start_page, end_page)
-    return json_response(result)
-
-
-@app.route('/search/all/threaded', methods=['GET'])
-def search_all_threaded():
-    query = request.args.get('q', '').strip()
-    max_pages = int(request.args.get('max_pages', 10))
+    if end_page > 50:
+        return json_response({'error': 'end_page cannot exceed 50'}, 400)
     
-    if not query:
-        return json_response({'error': 'Missing query parameter (q)'}, 400)
-    
-    if max_pages < 1 or max_pages > 50:
-        return json_response({'error': 'max_pages must be between 1 and 50'}, 400)
-    
-    result = scraper.search_all_pages_threaded(query, max_pages)
+    result = scraper.fetch_custom_range(query, start_page, end_page)
     return json_response(result)
 
 
@@ -489,4 +747,13 @@ def clear_cache():
 
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', random.randint(5000, 6000)))
+    print(f"\n{'='*80}")
+    print(f"🚀 COMPREHENSIVE GOOGLE SCRAPER STARTED")
+    print(f"{'='*80}")
+    print(f"📡 Port: {port}")
+    print(f"🎯 Collects: Organic results, Featured snippets, Knowledge panels,")
+    print(f"            People also ask, Related searches, News, Videos, Images,")
+    print(f"            Shopping, Local results, Ads, and more!")
+    print(f"{'='*80}\n")
+    
     app.run(host='0.0.0.0', port=port, debug=True, threaded=True)
